@@ -26,7 +26,7 @@ Use `docker-compose.unraid.yml` to deploy the full stack in one go (no separate 
 5. Choose a free host port via `APP_HOST_PORT` (example: `3210`).
 6. Start stack.
 7. Configure Nginx reverse proxy:
-   - domain: `fitness.flamingbattenberg.de`
+   - domain: `your-domain.example`
    - upstream: `http://<UNRAID_IP>:<APP_HOST_PORT>`
    - TLS certificate enabled
 
@@ -36,7 +36,7 @@ See `.env.unraid.example`.
 
 Most important:
 
-- `NEXT_PUBLIC_APP_URL=https://fitness.flamingbattenberg.de`
+- `NEXT_PUBLIC_APP_URL=https://your-domain.example`
 - `APP_HOST_PORT=3210` (or any free port on your server)
 - `POSTGRES_PASSWORD=<strong password>`
 - `AUTH_SECRET=<long random secret>`
@@ -72,6 +72,3 @@ npm run dev -- --hostname 0.0.0.0 --port 3005
 - Dashboard: `/dashboard`
 - Admin page: `/admin`
 
-## Backup / Restore
-
-See `backup_restore_runbook.md` for PostgreSQL dump/restore instructions and verification steps.
