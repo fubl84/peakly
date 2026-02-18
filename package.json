@@ -1,0 +1,41 @@
+{
+  "name": "peakly_app",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Christoph Seiler / Flaming Battenberg",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:wave3": "tsx src/lib/__tests__/wave3-resolvers.test.ts",
+    "test:f02": "tsx src/lib/__tests__/wave6-auth-integration.test.ts",
+    "test:f03": "tsx src/lib/__tests__/wave6-e2e-flows.test.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.3.1",
+    "bcryptjs": "^3.0.2",
+    "lucide-react": "^0.574.0",
+    "next": "16.1.6",
+    "next-auth": "^5.0.0-beta.25",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "prisma": "^6.3.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

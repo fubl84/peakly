@@ -1,0 +1,649 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+model UserPathEnrollment {
+  id               String                 @id @default(cuid())
+  userId           String
+  pathId           String
+  startDate        DateTime
+  isActive         Boolean                @default(true)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path             Path                   @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  selectedVariants UserEnrollmentVariant[]
+  trainingCalendarEntries UserTrainingCalendarEntry[]
+  nutritionCalendarEntries UserNutritionCalendarEntry[]
+  shoppingLists UserShoppingList[]
+  workoutSessions UserWorkoutSession[]
+  weeklyCheckIns UserWeeklyCheckIn[]
+  dashboardInsightCaches DashboardInsightCache[]
+
+  @@index([userId, isActive])
+}
+
+model UserEnrollmentVariant {
+  id               String             @id @default(cuid())
+  enrollmentId     String
+  variantTypeId    String
+  variantOptionId  String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  enrollment   UserPathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  variantType  VariantType        @relation(fields: [variantTypeId], references: [id], onDelete: Cascade)
+  variantOption VariantOption     @relation(fields: [variantOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, variantTypeId])
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  ADMIN
+  USER
+}
+
+enum VariantKind {
+  TRAINING
+  NUTRITION
+}
+
+enum ExerciseMetricType {
+  REPETITIONS
+  DURATION
+}
+
+enum ExerciseSideMode {
+  NONE
+  ONE_SIDE
+  BOTH_SIDES
+}
+
+enum InfoCategory {
+  FOOD
+  WORKOUT
+  MOTIVATION
+  GENERAL
+}
+
+enum PathAssignmentKind {
+  TRAINING
+  NUTRITION
+  INFO
+}
+
+enum MealSlot {
+  MORNING
+  SNACK_1
+  LUNCH
+  SNACK_2
+  DINNER
+  NIGHT
+}
+
+enum AmountUnit {
+  G
+  ML
+  EL
+  TL
+  HAND
+  STK
+}
+
+enum PairLinkStatus {
+  PENDING
+  ACTIVE
+}
+
+enum WorkoutSessionStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum CoachTone {
+  SUPPORTIVE
+  DIRECT
+  PERFORMANCE
+  ANALYTICAL
+}
+
+enum WeeklyCheckInType {
+  MONDAY_PLAN
+  SUNDAY_RECAP
+}
+
+enum DashboardInsightKey {
+  TODAY_FOCUS
+  GOAL_FEEDBACK
+  PLAN_SYNC
+  MOMENTUM
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  settings     UserSetting?
+  userRoles    UserRole[]
+  enrollments  UserPathEnrollment[]
+  trainingCalendarEntries UserTrainingCalendarEntry[]
+  nutritionCalendarEntries UserNutritionCalendarEntry[]
+  shoppingLists UserShoppingList[]
+  initiatedPairLinks UserPairLink[] @relation("PairLinkInitiator")
+  receivedPairLinks UserPairLink[] @relation("PairLinkInvitee")
+  workoutSessions UserWorkoutSession[]
+  aiInteractions AIInteraction[]
+  createdShoppingListItems UserShoppingListItem[] @relation("ShoppingItemCreator")
+  infoBlockReads UserInfoBlockRead[]
+  coachProfile UserCoachProfile?
+  weeklyCheckIns UserWeeklyCheckIn[]
+  dashboardInsightCaches DashboardInsightCache[]
+}
+
+model UserSetting {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  currentWeightKg Float?
+  heightCm       Int?
+  age            Int?
+  gender         String?
+  activityLevel  String?
+  pathGoal       String?
+  geminiApiKey   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserCoachProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  tone                CoachTone @default(SUPPORTIVE)
+  constraints         String?
+  trainingPreferences String?
+  nutritionPreferences String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserWeeklyCheckIn {
+  id                String            @id @default(cuid())
+  userId            String
+  enrollmentId      String?
+  year              Int
+  week              Int
+  type              WeeklyCheckInType
+  energyLevel       Int?
+  stressLevel       Int?
+  sleepQualityLevel Int?
+  adherenceLevel    Int?
+  note              String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment UserPathEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, year, week, type])
+  @@index([userId, year, week])
+  @@index([enrollmentId])
+}
+
+model DashboardInsightCache {
+  id          String              @id @default(cuid())
+  userId      String
+  enrollmentId String?
+  week        Int
+  insightKey  DashboardInsightKey
+  content     String
+  contextHash String
+  model       String?
+  generatedAt DateTime            @default(now())
+  expiresAt   DateTime
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment UserPathEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, week, insightKey])
+  @@index([userId, expiresAt])
+  @@index([enrollmentId, week])
+}
+
+model Path {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  assignments PathAssignment[]
+  enrollments UserPathEnrollment[]
+
+  @@unique([name])
+}
+
+model PathAssignment {
+  id              String             @id @default(cuid())
+  pathId           String
+  kind             PathAssignmentKind
+  weekStart        Int
+  weekEnd          Int
+  contentRefId     String
+  variantOptionId  String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  path          Path           @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  variantOption VariantOption? @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+
+  @@index([pathId, kind, weekStart, weekEnd])
+}
+
+model VariantType {
+  id             String          @id @default(cuid())
+  name           String
+  internalName   String          @unique
+  description    String?
+  kind           VariantKind
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  variantOptions VariantOption[]
+  selectedByEnrollments UserEnrollmentVariant[]
+
+  @@unique([name, kind])
+}
+
+model VariantOption {
+  id              String            @id @default(cuid())
+  variantTypeId   String
+  name            String
+  internalName    String
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  variantType     VariantType       @relation(fields: [variantTypeId], references: [id], onDelete: Cascade)
+  pathAssignments PathAssignment[]
+  exercises       Exercise[]
+  nutritionPlans  NutritionPlan[]
+  trainingPlans   TrainingPlan[]
+  recipes         Recipe[]
+  selectedByEnrollments UserEnrollmentVariant[]
+
+  @@unique([variantTypeId, internalName])
+  @@unique([variantTypeId, name])
+}
+
+model Exercise {
+  id                    String               @id @default(cuid())
+  name                  String
+  internalName          String               @unique
+  description           String?
+  metricType            ExerciseMetricType
+  sideMode              ExerciseSideMode     @default(NONE)
+  mediaUrl              String?
+  variantOptionId       String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  variantOption         VariantOption?       @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  trainingPlanExercises TrainingPlanExercise[]
+
+  @@unique([name])
+}
+
+model TrainingPlan {
+  id                String                 @id @default(cuid())
+  name              String
+  internalName      String                 @unique
+  description       String?
+  videoUrl          String?
+  weekStart         Int
+  weekEnd           Int
+  variantOptionId   String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  variantOption     VariantOption?         @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  trainingExercises TrainingPlanExercise[]
+  trainingCalendarEntries UserTrainingCalendarEntry[]
+  workoutSessions UserWorkoutSession[]
+}
+
+model UserTrainingCalendarEntry {
+  id              String             @id @default(cuid())
+  userId          String
+  enrollmentId    String
+  week            Int
+  dayOfWeek       Int
+  trainingPlanId  String?
+  isRestDay       Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment   UserPathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  trainingPlan TrainingPlan?      @relation(fields: [trainingPlanId], references: [id], onDelete: SetNull)
+
+  @@unique([enrollmentId, week, dayOfWeek])
+  @@index([userId, week])
+}
+
+model TrainingPlanExercise {
+  id             String       @id @default(cuid())
+  trainingPlanId String
+  exerciseId     String
+  block          String
+  position       Int
+  reps           Int?
+  durationSec    Int?
+  restSec        Int?
+  info           String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  trainingPlan TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  exercise     Exercise     @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([trainingPlanId, block, position])
+}
+
+model Ingredient {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  description   String?
+  imageUrl      String?
+  mlDensityGPerMl Float?
+  gramsPerPiece Float?
+  gramsPerHand  Float?
+  gramsPerTeaspoon Float?
+  gramsPerTablespoon Float?
+  gramsPerPinch Float?
+  gramsPerCup   Float?
+  gramsPerSlice Float?
+  gramsPerBunch Float?
+  gramsPerCan   Float?
+  fat           Float?
+  carbs         Float?
+  protein       Float?
+  calories      Float?
+  fiber         Float?
+  sugar         Float?
+  salt          Float?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  mealEntries   NutritionPlanMealEntry[]
+  recipeEntries RecipeIngredient[]
+  shoppingListItems UserShoppingListItem[]
+}
+
+model NutritionPlan {
+  id              String                   @id @default(cuid())
+  name            String
+  internalName    String                   @unique
+  description     String?
+  weekStart       Int
+  weekEnd         Int
+  variantOptionId String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  variantOption   VariantOption?           @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  mealEntries     NutritionPlanMealEntry[]
+}
+
+model NutritionPlanMealEntry {
+  id              String       @id @default(cuid())
+  nutritionPlanId String
+  mealType        String
+  ingredientId    String
+  amount          Float
+  unit            String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  nutritionPlan NutritionPlan @relation(fields: [nutritionPlanId], references: [id], onDelete: Cascade)
+  ingredient    Ingredient    @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@index([nutritionPlanId, mealType])
+}
+
+model Recipe {
+  id              String             @id @default(cuid())
+  name            String
+  internalName    String             @unique
+  description     String?
+  imageUrl        String?
+  tips            String?
+  variantOptionId String?
+  nutritionFat    Float?
+  nutritionCarbs  Float?
+  nutritionProtein Float?
+  nutritionCalories Float?
+  nutritionFiber  Float?
+  nutritionSugar  Float?
+  nutritionSalt   Float?
+  nutritionTotalGrams Float?
+  nutritionWarningCount Int          @default(0)
+  nutritionHasEstimatedConversions Boolean @default(false)
+  nutritionComputedAt DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  variantOption VariantOption?    @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  ingredients   RecipeIngredient[]
+  steps         RecipeStep[]
+  nutritionCalendarEntries UserNutritionCalendarEntry[]
+  shoppingListItems UserShoppingListItem[]
+}
+
+model UserShoppingList {
+  id            String               @id @default(cuid())
+  userId        String
+  enrollmentId  String
+  week          Int
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment  UserPathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  items       UserShoppingListItem[]
+
+  @@unique([enrollmentId, week])
+  @@index([userId, week])
+}
+
+model UserShoppingListItem {
+  id            String           @id @default(cuid())
+  shoppingListId String
+  dedupeKey     String
+  label         String
+  category      String           @default("other")
+  ingredientId  String?
+  sourceRecipeId String?
+  createdByUserId String?
+  amount        Float?
+  unit          String?
+  isChecked     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  shoppingList UserShoppingList @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient?      @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
+  sourceRecipe Recipe?          @relation(fields: [sourceRecipeId], references: [id], onDelete: SetNull)
+  createdBy    User?            @relation("ShoppingItemCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([shoppingListId, dedupeKey])
+  @@index([shoppingListId, isChecked])
+  @@index([shoppingListId, category])
+}
+
+model UserWorkoutSession {
+  id                String               @id @default(cuid())
+  userId            String
+  enrollmentId      String
+  trainingPlanId    String
+  week              Int
+  dayOfWeek         Int
+  currentStepIndex  Int                  @default(0)
+  status            WorkoutSessionStatus @default(ACTIVE)
+  startedAt         DateTime             @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment   UserPathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  trainingPlan TrainingPlan       @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+
+  @@index([userId, week, status])
+  @@index([enrollmentId, week, dayOfWeek])
+}
+
+model UserPairLink {
+  id           String         @id @default(cuid())
+  pairKey      String         @unique
+  initiatorId  String
+  inviteeId    String
+  status       PairLinkStatus @default(PENDING)
+  acceptedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  initiator User @relation("PairLinkInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  invitee   User @relation("PairLinkInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@index([inviteeId, status])
+  @@index([initiatorId, status])
+}
+
+model AIInteraction {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  request   String
+  response  String?
+  error     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+}
+
+model UserNutritionCalendarEntry {
+  id            String             @id @default(cuid())
+  userId        String
+  enrollmentId  String
+  week          Int
+  dayOfWeek     Int
+  mealType      String
+  recipeId      String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment UserPathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  recipe     Recipe?            @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  @@unique([enrollmentId, week, dayOfWeek, mealType])
+  @@index([userId, week])
+}
+
+model RecipeIngredient {
+  id           String    @id @default(cuid())
+  recipeId     String
+  ingredientId String
+  amount       Float
+  unit         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+}
+
+model RecipeStep {
+  id          String    @id @default(cuid())
+  recipeId    String
+  position    Int
+  description String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, position])
+}
+
+model InfoBlock {
+  id           String       @id @default(cuid())
+  name         String
+  internalName String       @unique
+  contentHtml  String
+  videoUrl     String?
+  isFullPath   Boolean      @default(false)
+  weekStart    Int?
+  weekEnd      Int?
+  category     InfoCategory
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  userReads    UserInfoBlockRead[]
+}
+
+model UserInfoBlockRead {
+  id          String   @id @default(cuid())
+  userId      String
+  infoBlockId String
+  readAt      DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  infoBlock InfoBlock @relation(fields: [infoBlockId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, infoBlockId])
+  @@index([userId, readAt])
+}
+
+model VideoAsset {
+  id               String   @id @default(cuid())
+  name             String
+  originalFileName String
+  url              String   @unique
+  mimeType         String
+  sizeBytes        Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([name])
+  @@index([createdAt])
+}
+
+model Role {
+  id        String     @id @default(cuid())
+  name      RoleName   @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  userRoles UserRole[]
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}

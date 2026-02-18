@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sizezero_db
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: sizezero
+      POSTGRES_PASSWORD: sizezero_dev_password
+      POSTGRES_DB: sizezero
+    volumes:
+      - sizezero_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sizezero -d sizezero"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    image: node:20-alpine
+    container_name: sizezero_app
+    working_dir: /app
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      DATABASE_URL: postgresql://sizezero:sizezero_dev_password@db:5432/sizezero?schema=public
+      AUTH_SECRET: replace-with-strong-secret
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_APP_URL: http://localhost:3005
+    volumes:
+      - ./:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+      npm install &&
+      npm run db:generate &&
+      npx prisma migrate deploy &&
+      npm run db:seed &&
+      npm run dev -- --hostname 0.0.0.0 --port 3005
+      "
+
+volumes:
+  sizezero_db_data:

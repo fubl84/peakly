@@ -1,0 +1,24 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Peakly Logo</title>
+  <desc id="desc">Rounded box icon with sweat drop and motion accents for the Peakly fitness app.</desc>
+  <defs>
+    <linearGradient id="bg" x1="28" y1="20" x2="228" y2="236" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4FFF8"/>
+      <stop offset="1" stop-color="#DBF6E5"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="90" y1="66" x2="170" y2="190" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20A35C"/>
+      <stop offset="1" stop-color="#0F7A40"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="24" y="24" width="208" height="208" rx="52" fill="url(#bg)" stroke="#0F7A40" stroke-width="10"/>
+
+  <rect x="82" y="76" width="92" height="104" rx="30" fill="url(#accent)"/>
+  <path d="M128 90C118 103 114 111 114 118C114 126 120 132 128 132C136 132 142 126 142 118C142 111 138 103 128 90Z" fill="#EFFFF5"/>
+
+  <path d="M70 152H94" stroke="#0F7A40" stroke-width="10" stroke-linecap="round"/>
+  <path d="M162 152H186" stroke="#0F7A40" stroke-width="10" stroke-linecap="round"/>
+  <path d="M78 114H98" stroke="#0F7A40" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+  <path d="M158 114H178" stroke="#0F7A40" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+</svg>
