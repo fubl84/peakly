@@ -30,6 +30,33 @@ Use `docker-compose.unraid.yml` to deploy the full stack in one go (no separate 
    - upstream: `http://<UNRAID_IP>:<APP_HOST_PORT>`
    - TLS certificate enabled
 
+### Unraid editor fields (what goes where)
+
+When editing your stack in Unraid, use this mapping:
+
+- **Compose file**
+  - Paste the content of `docker-compose.unraid.yml`.
+  - Keep both services (`db` + `app`) in this file.
+
+- **Env file**
+  - Paste key/value lines from `.env.unraid.example` and replace placeholders.
+  - Recommended values:
+    - `NEXT_PUBLIC_APP_URL=https://your-domain.example`
+    - `APP_HOST_PORT=3210`
+    - `DB_DATA_PATH=/mnt/user/appdata/sizezero/postgres`
+    - `UPLOADS_DATA_PATH=/mnt/user/appdata/sizezero/uploads`
+    - `AUTH_SECRET=<long random secret>`
+    - `INITIAL_ADMIN_EMAIL=admin@example.com`
+    - `INITIAL_ADMIN_PASSWORD=<strong password, min 12 chars>`
+
+- **UI labels**
+  - Optional. You can leave this empty.
+
+- **Stack settings**
+  - Usually defaults are fine.
+  - Ensure auto-update does not overwrite your custom env values unexpectedly.
+  - Redeploy stack after any env or compose change.
+
 ### Required environment variables for Unraid stack
 
 See `.env.unraid.example`.
@@ -39,6 +66,7 @@ Most important:
 - `NEXT_PUBLIC_APP_URL=https://your-domain.example`
 - `APP_HOST_PORT=3210` (or any free port on your server)
 - `POSTGRES_PASSWORD=<strong password>`
+- `UPLOADS_DATA_PATH=/mnt/user/appdata/sizezero/uploads` (persistent user uploads)
 - `AUTH_SECRET=<long random secret>`
 - `INITIAL_ADMIN_EMAIL=<your admin email>`
 - `INITIAL_ADMIN_PASSWORD=<strong admin password, min 12 chars>`

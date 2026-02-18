@@ -26,6 +26,8 @@ services:
         condition: service_healthy
     ports:
       - "${APP_HOST_PORT:-3210}:3000"
+    volumes:
+      - ${UPLOADS_DATA_PATH:-./data/uploads}:/app/public/uploads
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-sizezero}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:-sizezero}?schema=public
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
