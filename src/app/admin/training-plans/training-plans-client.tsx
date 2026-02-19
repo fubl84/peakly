@@ -52,6 +52,8 @@ type ExerciseItem = {
   metricType: "REPETITIONS" | "DURATION";
 };
 
+type MetricInputMode = "REPETITIONS" | "DURATION";
+
 type TrainingPlansClientProps = {
   plans: TrainingPlanItem[];
   variantOptions: VariantOptionItem[];
@@ -94,11 +96,15 @@ function formatBlockLabel(block: string) {
 }
 
 function getMetricLabel(entry: TrainingPlanItem["trainingExercises"][number]) {
-  if (entry.exercise.metricType === "REPETITIONS") {
-    return `${entry.reps ?? "-"} Wdh.`;
+  if (entry.reps !== null) {
+    return `${entry.reps} Wdh.`;
   }
 
-  return `${entry.durationSec ?? "-"} Sek.`;
+  if (entry.durationSec !== null) {
+    return `${entry.durationSec} Sek.`;
+  }
+
+  return "-";
 }
 
 function buildOrderedBlocks(
@@ -140,6 +146,8 @@ function TrainingPlanEditorModal({
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>(
     exercises[0]?.id ?? "",
   );
+  const [selectedMetricInputMode, setSelectedMetricInputMode] =
+    useState<MetricInputMode>(exercises[0]?.metricType ?? "REPETITIONS");
   const [dragging, setDragging] = useState<{
     id: string;
     block: string;
@@ -162,12 +170,6 @@ function TrainingPlanEditorModal({
     exercises.some((exercise) => exercise.id === selectedExerciseId)
       ? selectedExerciseId
       : (exercises[0]?.id ?? "");
-
-  const selectedExercise = useMemo(
-    () =>
-      exercises.find((exercise) => exercise.id === activeExerciseId) ?? null,
-    [activeExerciseId, exercises],
-  );
 
   const selectedBlockEntries = useMemo(
     () =>
@@ -347,9 +349,16 @@ function TrainingPlanEditorModal({
                 <select
                   name="exerciseId"
                   value={activeExerciseId}
-                  onChange={(event) =>
-                    setSelectedExerciseId(event.target.value)
-                  }
+                  onChange={(event) => {
+                    const nextExerciseId = event.target.value;
+                    const nextExercise = exercises.find(
+                      (exercise) => exercise.id === nextExerciseId,
+                    );
+                    setSelectedExerciseId(nextExerciseId);
+                    setSelectedMetricInputMode(
+                      nextExercise?.metricType ?? "REPETITIONS",
+                    );
+                  }}
                   required
                   disabled={
                     orderedBlocks.length === 0 || exercises.length === 0
@@ -367,16 +376,31 @@ function TrainingPlanEditorModal({
                 style={{
                   display: "grid",
                   gap: "0.5rem",
-                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
                 }}
               >
+                <label className="field">
+                  <span>Metrik</span>
+                  <select
+                    value={selectedMetricInputMode}
+                    onChange={(event) =>
+                      setSelectedMetricInputMode(
+                        event.target.value as MetricInputMode,
+                      )
+                    }
+                  >
+                    <option value="REPETITIONS">Wiederholungen</option>
+                    <option value="DURATION">Dauer (Sek.)</option>
+                  </select>
+                </label>
                 <label className="field">
                   <span>Wiederholungen</span>
                   <input
                     name="reps"
                     type="number"
                     min={1}
-                    required={selectedExercise?.metricType === "REPETITIONS"}
+                    required={selectedMetricInputMode === "REPETITIONS"}
+                    disabled={selectedMetricInputMode !== "REPETITIONS"}
                   />
                 </label>
                 <label className="field">
@@ -385,7 +409,8 @@ function TrainingPlanEditorModal({
                     name="durationSec"
                     type="number"
                     min={1}
-                    required={selectedExercise?.metricType === "DURATION"}
+                    required={selectedMetricInputMode === "DURATION"}
+                    disabled={selectedMetricInputMode !== "DURATION"}
                   />
                 </label>
                 <label className="field">

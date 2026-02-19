@@ -50,22 +50,28 @@ async function assertMetricInput(
 ) {
   const exercise = await prisma.exercise.findUnique({
     where: { id: exerciseId },
-    select: { metricType: true },
+    select: { id: true },
   });
 
   if (!exercise) {
     throw new Error("Übung nicht gefunden.");
   }
 
-  if (exercise.metricType === "REPETITIONS" && (reps === null || reps < 1)) {
-    throw new Error("Für diese Übung sind Wiederholungen erforderlich.");
+  if (reps !== null && reps < 1) {
+    throw new Error("Wiederholungen müssen größer oder gleich 1 sein.");
   }
 
-  if (
-    exercise.metricType === "DURATION" &&
-    (durationSec === null || durationSec < 1)
-  ) {
-    throw new Error("Für diese Übung ist eine Dauer in Sekunden erforderlich.");
+  if (durationSec !== null && durationSec < 1) {
+    throw new Error("Dauer in Sekunden muss größer oder gleich 1 sein.");
+  }
+
+  const hasReps = reps !== null;
+  const hasDuration = durationSec !== null;
+
+  if (hasReps === hasDuration) {
+    throw new Error(
+      "Bitte genau eine Metrik angeben: entweder Wiederholungen oder Dauer in Sekunden.",
+    );
   }
 }
 
