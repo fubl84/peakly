@@ -86,8 +86,7 @@ export async function POST(request: Request) {
   if (file.size <= 0 || file.size > MAX_VIDEO_SIZE_BYTES) {
     return NextResponse.json(
       {
-        error:
-          "Ungültige Dateigröße. Erlaubt sind bis zu 200 MB pro Video.",
+        error: "Ungültige Dateigröße. Erlaubt sind bis zu 200 MB pro Video.",
       },
       { status: 400 },
     );
@@ -98,9 +97,14 @@ export async function POST(request: Request) {
     sanitizeBaseName(overrideName || file.name.replace(/\.[^.]+$/, "")) ||
     "video";
   const fileName = `${safeBase}-${randomUUID()}${extension}`;
-  const absoluteTargetDir = path.join(process.cwd(), "public", "uploads", "videos");
+  const absoluteTargetDir = path.join(
+    process.cwd(),
+    "public",
+    "uploads",
+    "videos",
+  );
   const absoluteTargetFile = path.join(absoluteTargetDir, fileName);
-  const publicUrl = `/uploads/videos/${fileName}`;
+  const publicUrl = `/api/video-assets/${fileName}`;
 
   await mkdir(absoluteTargetDir, { recursive: true });
   const bytes = await file.arrayBuffer();

@@ -24,7 +24,7 @@ function isInternalVideoUrl(value: string | null | undefined) {
     return false;
   }
 
-  return value.startsWith("/uploads/videos/");
+  return value.startsWith("/api/video-assets/");
 }
 
 function formatBytes(bytes: number) {
