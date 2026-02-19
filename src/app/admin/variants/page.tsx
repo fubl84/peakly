@@ -2,16 +2,14 @@ import { VariantsClient } from "./variants-client";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminVariantsPage() {
-  const [types, options] = await Promise.all([
-    prisma.variantType.findMany({
+  const [variants, options] = await Promise.all([
+    prisma.variant.findMany({
       orderBy: [{ kind: "asc" }, { name: "asc" }],
-      include: { variantOptions: { orderBy: { name: "asc" } } },
     }),
-    prisma.variantOption.findMany({
-      orderBy: [{ variantTypeId: "asc" }, { name: "asc" }],
-      include: { variantType: true },
+    prisma.option.findMany({
+      orderBy: [{ kind: "asc" }, { name: "asc" }],
     }),
   ]);
 
-  return <VariantsClient types={types} options={options} />;
+  return <VariantsClient variants={variants} options={options} />;
 }

@@ -47,7 +47,7 @@ export async function upsertTrainingCalendarEntryAction(
     where: { userId: session.user.id, isActive: true },
     include: {
       selectedVariants: {
-        select: { variantOptionId: true },
+        select: { variantId: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -67,8 +67,8 @@ export async function upsertTrainingCalendarEntryAction(
     throw new Error("Woche liegt außerhalb der Pfaddauer.");
   }
 
-  const selectedVariantOptionIds = enrollment.selectedVariants.map(
-    (entry: { variantOptionId: string }) => entry.variantOptionId,
+  const selectedVariantIds = enrollment.selectedVariants.map(
+    (entry: { variantId: string }) => entry.variantId,
   );
 
   const availableTrainingAssignments =
@@ -76,7 +76,7 @@ export async function upsertTrainingCalendarEntryAction(
       prismaClient: prisma,
       pathId: enrollment.pathId,
       week,
-      selectedVariantOptionIds,
+      selectedVariantIds,
       kind: "TRAINING",
     });
 

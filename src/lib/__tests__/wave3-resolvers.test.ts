@@ -408,7 +408,7 @@ async function testVariantResolverFiltering() {
     prismaClient: fakePrismaClient as never,
     pathId: "path-1",
     week: 4,
-    selectedVariantOptionIds: ["variant-1", "variant-2"],
+    selectedVariantIds: ["variant-1", "variant-2"],
   });
 
   assertEqual(
@@ -456,7 +456,7 @@ async function testVariantResolverFiltering() {
     prismaClient: fakePrismaClient as never,
     pathId: "path-1",
     week: 5,
-    selectedVariantOptionIds: [],
+    selectedVariantIds: [],
     kind: "NUTRITION",
   });
 
@@ -468,7 +468,7 @@ async function testVariantResolverFiltering() {
 
   const secondWhere = captured[1].where as {
     kind?: unknown;
-    OR?: Array<{ variantOptionId?: unknown }>;
+    OR?: Array<{ variantId?: unknown }>;
   };
 
   assertEqual(
@@ -477,7 +477,7 @@ async function testVariantResolverFiltering() {
     "Variant resolver should pass through explicit kind filter",
   );
 
-  const variantFilter = secondWhere.OR?.[1]?.variantOptionId as
+  const variantFilter = secondWhere.OR?.[1]?.variantId as
     | { in?: unknown[] }
     | undefined;
   assert(

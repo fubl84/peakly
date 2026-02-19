@@ -2,11 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { RecipesClient } from "./recipes-client";
 
 export default async function AdminRecipesPage() {
-  const [recipes, variantOptions, ingredients] = await Promise.all([
+  const [recipes, variants, ingredients] = await Promise.all([
     prisma.recipe.findMany({
       orderBy: { name: "asc" },
       include: {
-        variantOption: {
+        variant: {
           select: { id: true, name: true },
         },
         ingredients: {
@@ -34,8 +34,8 @@ export default async function AdminRecipesPage() {
         },
       },
     }),
-    prisma.variantOption.findMany({
-      where: { variantType: { kind: "NUTRITION" } },
+    prisma.variant.findMany({
+      where: { kind: "NUTRITION" },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
@@ -48,7 +48,7 @@ export default async function AdminRecipesPage() {
   return (
     <RecipesClient
       recipes={recipes}
-      variantOptions={variantOptions}
+      variants={variants}
       ingredients={ingredients}
     />
   );

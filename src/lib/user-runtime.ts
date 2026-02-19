@@ -9,8 +9,7 @@ export async function getActiveEnrollment(userId: string) {
       path: true,
       selectedVariants: {
         include: {
-          variantType: true,
-          variantOption: true,
+          variant: true,
         },
       },
     },
@@ -35,13 +34,15 @@ export async function resolveUserWeekBundle(userId: string) {
     maxWeeks: pathMaxWeek._max.weekEnd ?? undefined,
   });
 
-  const selectedVariantOptionIds = enrollment.selectedVariants.map((entry) => entry.variantOptionId);
+  const selectedVariantIds = enrollment.selectedVariants.map(
+    (entry) => entry.variantId,
+  );
 
   const assignments = await resolveAssignmentsForEnrollmentWeek({
     prismaClient: prisma,
     pathId: enrollment.pathId,
     week,
-    selectedVariantOptionIds,
+    selectedVariantIds,
   });
 
   return {

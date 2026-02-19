@@ -99,7 +99,8 @@ export async function createTrainingPlan(formData: FormData) {
   const videoUrl = getOptionalString(formData, "videoUrl");
   const weekStart = getRequiredInt(formData, "weekStart");
   const weekEnd = getRequiredInt(formData, "weekEnd");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const variantId = getOptionalString(formData, "variantId");
+  const optionId = getOptionalString(formData, "optionId");
 
   assertWeekRange(weekStart, weekEnd);
 
@@ -111,7 +112,8 @@ export async function createTrainingPlan(formData: FormData) {
       videoUrl,
       weekStart,
       weekEnd,
-      variantOptionId,
+      variantId,
+      optionId,
     },
   });
 
@@ -188,7 +190,8 @@ export async function updateTrainingPlan(formData: FormData) {
   const videoUrl = getOptionalString(formData, "videoUrl");
   const weekStart = getRequiredInt(formData, "weekStart");
   const weekEnd = getRequiredInt(formData, "weekEnd");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const variantId = getOptionalString(formData, "variantId");
+  const optionId = getOptionalString(formData, "optionId");
 
   assertWeekRange(weekStart, weekEnd);
 
@@ -201,7 +204,8 @@ export async function updateTrainingPlan(formData: FormData) {
       videoUrl,
       weekStart,
       weekEnd,
-      variantOptionId,
+      variantId,
+      optionId,
     },
   });
 

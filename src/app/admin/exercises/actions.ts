@@ -26,12 +26,15 @@ export async function createExercise(formData: FormData) {
   await assertAdminAction();
 
   const name = getRequiredString(formData, "name");
-  const internalName = getRequiredString(formData, "internalName").toLowerCase();
+  const internalName = getRequiredString(
+    formData,
+    "internalName",
+  ).toLowerCase();
   const description = getOptionalString(formData, "description");
   const metricType = parseMetricType(getRequiredString(formData, "metricType"));
   const sideMode = parseSideMode(getRequiredString(formData, "sideMode"));
   const mediaUrl = getOptionalString(formData, "mediaUrl");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const optionId = getOptionalString(formData, "optionId");
 
   await prisma.exercise.create({
     data: {
@@ -41,7 +44,7 @@ export async function createExercise(formData: FormData) {
       metricType,
       sideMode,
       mediaUrl,
-      variantOptionId,
+      optionId,
     },
   });
 
@@ -53,12 +56,15 @@ export async function updateExercise(formData: FormData) {
 
   const id = getRequiredString(formData, "id");
   const name = getRequiredString(formData, "name");
-  const internalName = getRequiredString(formData, "internalName").toLowerCase();
+  const internalName = getRequiredString(
+    formData,
+    "internalName",
+  ).toLowerCase();
   const description = getOptionalString(formData, "description");
   const metricType = parseMetricType(getRequiredString(formData, "metricType"));
   const sideMode = parseSideMode(getRequiredString(formData, "sideMode"));
   const mediaUrl = getOptionalString(formData, "mediaUrl");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const optionId = getOptionalString(formData, "optionId");
 
   await prisma.exercise.update({
     where: { id },
@@ -69,7 +75,7 @@ export async function updateExercise(formData: FormData) {
       metricType,
       sideMode,
       mediaUrl,
-      variantOptionId,
+      optionId,
     },
   });
 

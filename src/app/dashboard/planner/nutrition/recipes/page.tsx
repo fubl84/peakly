@@ -13,7 +13,7 @@ type RecipeRow = {
   nutritionProtein: number | null;
   nutritionCarbs: number | null;
   nutritionFat: number | null;
-  variantOption: {
+  variant: {
     name: string;
   } | null;
   ingredients: {
@@ -46,27 +46,24 @@ export default async function NutritionRecipesPage() {
     where: { userId: session.user.id, isActive: true },
     include: {
       selectedVariants: {
-        select: { variantOptionId: true },
+        select: { variantId: true },
       },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  const selectedVariantOptionIds =
+  const selectedVariantIds =
     enrollment?.selectedVariants.map(
-      (entry: { variantOptionId: string }) => entry.variantOptionId,
+      (entry: { variantId: string }) => entry.variantId,
     ) ?? [];
 
   const recipes = (await prisma.recipe.findMany({
     where: {
-      OR: [
-        { variantOptionId: null },
-        { variantOptionId: { in: selectedVariantOptionIds } },
-      ],
+      OR: [{ variantId: null }, { variantId: { in: selectedVariantIds } }],
     },
     orderBy: { name: "asc" },
     include: {
-      variantOption: {
+      variant: {
         select: {
           name: true,
         },
@@ -118,7 +115,7 @@ export default async function NutritionRecipesPage() {
     description: recipe.description,
     tips: recipe.tips,
     imageUrl: recipe.imageUrl,
-    variantName: recipe.variantOption?.name ?? null,
+    variantName: recipe.variant?.name ?? null,
     nutrition: {
       calories: recipe.nutritionCalories,
       protein: recipe.nutritionProtein,

@@ -85,27 +85,17 @@ export async function createEnrollmentAction(
     throw new Error("Ungültiges Startdatum.");
   }
 
-  const variantTypes = await prisma.variantType.findMany({
+  const variants = await prisma.variant.findMany({
     orderBy: [{ kind: "asc" }, { name: "asc" }],
   });
 
-  const selectedVariants = variantTypes
-    .map((type) => {
-      const key = `variantType:${type.id}`;
-      const variantOptionId = String(formData.get(key) ?? "").trim();
-      if (!variantOptionId) {
-        return null;
-      }
+  const selectedVariantIds = ["TRAINING", "NUTRITION"]
+    .map((kind) => String(formData.get(`variantKind:${kind}`) ?? "").trim())
+    .filter(Boolean);
 
-      return {
-        variantTypeId: type.id,
-        variantOptionId,
-      };
-    })
-    .filter(
-      (item): item is { variantTypeId: string; variantOptionId: string } =>
-        item !== null,
-    );
+  const selectedVariants = selectedVariantIds
+    .filter((variantId) => variants.some((variant) => variant.id === variantId))
+    .map((variantId) => ({ variantId }));
 
   await createEnrollment({
     userId: session.user.id,

@@ -432,19 +432,19 @@ export async function getDashboardInsightsForUser(args: {
       prismaClient: prisma,
       pathId: bundle.enrollment.pathId,
       week: bundle.week,
-      selectedVariantOptionIds: bundle.enrollment.selectedVariants.map(
-        (entry) => entry.variantOptionId,
+      selectedVariantIds: bundle.enrollment.selectedVariants.map(
+        (entry) => entry.variantId,
       ),
       kind: "NUTRITION",
     }),
     prisma.recipe.findMany({
       where: {
         OR: [
-          { variantOptionId: null },
+          { variantId: null },
           {
-            variantOptionId: {
+            variantId: {
               in: bundle.enrollment.selectedVariants.map(
-                (entry) => entry.variantOptionId,
+                (entry) => entry.variantId,
               ),
             },
           },
@@ -495,8 +495,8 @@ export async function getDashboardInsightsForUser(args: {
       userId: args.userId,
       pathId: bundle.enrollment.pathId,
       week: bundle.week,
-      selectedVariantOptionIds: bundle.enrollment.selectedVariants.map(
-        (entry) => entry.variantOptionId,
+      selectedVariantIds: bundle.enrollment.selectedVariants.map(
+        (entry) => entry.variantId,
       ),
       categories: ["GENERAL", "MOTIVATION", "FOOD", "WORKOUT"],
     }),

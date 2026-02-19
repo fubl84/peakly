@@ -11,8 +11,8 @@ type CatalogAssignment = {
   weekStart: number;
   weekEnd: number;
   contentRefId: string;
-  variantOptionId: string | null;
-  variantOption: { id: string; name: string } | null;
+  variantId: string | null;
+  variant: { id: string; name: string } | null;
 };
 
 type CatalogPathRecord = {
@@ -28,7 +28,7 @@ export default async function DashboardPathsPage() {
     include: {
       assignments: {
         orderBy: [{ kind: "asc" }, { weekStart: "asc" }],
-        include: { variantOption: true },
+        include: { variant: true },
       },
     },
   })) as CatalogPathRecord[];
@@ -135,7 +135,7 @@ export default async function DashboardPathsPage() {
         weekStart: assignment.weekStart,
         weekEnd: assignment.weekEnd,
         contentName: getContentName(assignment.kind, assignment.contentRefId),
-        variantName: assignment.variantOption?.name ?? null,
+        variantName: assignment.variant?.name ?? null,
       })),
     };
   });

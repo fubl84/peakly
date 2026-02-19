@@ -35,8 +35,8 @@ type RecipeOption = {
   description: string | null;
   imageUrl: string | null;
   tips: string | null;
-  variantOptionId: string | null;
-  variantOption: {
+  variantId: string | null;
+  variant: {
     id: string;
     name: string;
   } | null;
@@ -170,7 +170,7 @@ export default async function NutritionPlannerPage(
     where: { userId: session.user.id, isActive: true },
     include: {
       selectedVariants: {
-        select: { variantOptionId: true },
+        select: { variantId: true },
       },
       path: {
         select: { name: true },
@@ -220,15 +220,15 @@ export default async function NutritionPlannerPage(
     week,
   );
 
-  const selectedVariantOptionIds = enrollment.selectedVariants.map(
-    (entry: { variantOptionId: string }) => entry.variantOptionId,
+  const selectedVariantIds = enrollment.selectedVariants.map(
+    (entry: { variantId: string }) => entry.variantId,
   );
 
   const nutritionAssignments = (await resolveAssignmentsForEnrollmentWeek({
     prismaClient: prisma,
     pathId: enrollment.pathId,
     week,
-    selectedVariantOptionIds,
+    selectedVariantIds,
     kind: "NUTRITION",
   })) as NutritionAssignment[];
 
@@ -322,14 +322,11 @@ export default async function NutritionPlannerPage(
 
   const availableRecipes = (await prisma.recipe.findMany({
     where: {
-      OR: [
-        { variantOptionId: null },
-        { variantOptionId: { in: selectedVariantOptionIds } },
-      ],
+      OR: [{ variantId: null }, { variantId: { in: selectedVariantIds } }],
     },
     orderBy: { name: "asc" },
     include: {
-      variantOption: {
+      variant: {
         select: {
           id: true,
           name: true,
@@ -477,7 +474,7 @@ export default async function NutritionPlannerPage(
     description: recipe.description,
     imageUrl: recipe.imageUrl,
     tips: recipe.tips,
-    variantName: recipe.variantOption?.name ?? null,
+    variantName: recipe.variant?.name ?? null,
     nutrition: {
       calories: recipe.nutritionCalories,
       protein: recipe.nutritionProtein,
@@ -500,7 +497,7 @@ export default async function NutritionPlannerPage(
     userId: session.user.id,
     pathId: enrollment.pathId,
     week,
-    selectedVariantOptionIds,
+    selectedVariantIds,
     categories: ["FOOD"],
   });
 

@@ -2,10 +2,10 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 export default async function AdminPage() {
-  const [variantTypeCount, variantOptionCount, exerciseCount, ingredientCount] =
+  const [variantCount, optionCount, exerciseCount, ingredientCount] =
     await Promise.all([
-      prisma.variantType.count(),
-      prisma.variantOption.count(),
+      prisma.variant.count(),
+      prisma.option.count(),
       prisma.exercise.count(),
       prisma.ingredient.count(),
     ]);
@@ -30,8 +30,8 @@ export default async function AdminPage() {
           }}
         >
           <h2>Varianten</h2>
-          <p>Typen: {variantTypeCount}</p>
-          <p>Optionen: {variantOptionCount}</p>
+          <p>Einträge: {variantCount}</p>
+          <p>Optionen: {optionCount}</p>
           <Link href="/admin/variants">Verwalten</Link>
         </article>
 

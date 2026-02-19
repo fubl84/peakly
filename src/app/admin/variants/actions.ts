@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { assertAdminAction } from "@/lib/admin-action";
 import { getOptionalString, getRequiredString } from "@/lib/forms";
-import { VariantKind } from "@prisma/client";
+import { OptionKind, VariantKind } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 function parseVariantKind(value: string) {
@@ -14,15 +14,26 @@ function parseVariantKind(value: string) {
   throw new Error("Ungültiger Variantentyp.");
 }
 
+function parseOptionKind(value: string) {
+  if (value === "TRAINING" || value === "NUTRITION" || value === "INFO") {
+    return value as OptionKind;
+  }
+
+  throw new Error("Ungültiger Optionstyp.");
+}
+
 export async function createVariantType(formData: FormData) {
   await assertAdminAction();
 
   const name = getRequiredString(formData, "name");
-  const internalName = getRequiredString(formData, "internalName").toLowerCase();
+  const internalName = getRequiredString(
+    formData,
+    "internalName",
+  ).toLowerCase();
   const description = getOptionalString(formData, "description");
   const kind = parseVariantKind(getRequiredString(formData, "kind"));
 
-  await prisma.variantType.create({
+  await prisma.variant.create({
     data: { name, internalName, description, kind },
   });
 
@@ -34,11 +45,14 @@ export async function updateVariantType(formData: FormData) {
 
   const id = getRequiredString(formData, "id");
   const name = getRequiredString(formData, "name");
-  const internalName = getRequiredString(formData, "internalName").toLowerCase();
+  const internalName = getRequiredString(
+    formData,
+    "internalName",
+  ).toLowerCase();
   const description = getOptionalString(formData, "description");
   const kind = parseVariantKind(getRequiredString(formData, "kind"));
 
-  await prisma.variantType.update({
+  await prisma.variant.update({
     where: { id },
     data: { name, internalName, description, kind },
   });
@@ -51,7 +65,7 @@ export async function deleteVariantType(formData: FormData) {
 
   const id = getRequiredString(formData, "id");
 
-  await prisma.variantType.delete({ where: { id } });
+  await prisma.variant.delete({ where: { id } });
 
   revalidatePath("/admin/variants");
 }
@@ -59,13 +73,16 @@ export async function deleteVariantType(formData: FormData) {
 export async function createVariantOption(formData: FormData) {
   await assertAdminAction();
 
-  const variantTypeId = getRequiredString(formData, "variantTypeId");
   const name = getRequiredString(formData, "name");
-  const internalName = getRequiredString(formData, "internalName").toLowerCase();
+  const internalName = getRequiredString(
+    formData,
+    "internalName",
+  ).toLowerCase();
   const description = getOptionalString(formData, "description");
+  const kind = parseOptionKind(getRequiredString(formData, "kind"));
 
-  await prisma.variantOption.create({
-    data: { variantTypeId, name, internalName, description },
+  await prisma.option.create({
+    data: { name, internalName, description, kind },
   });
 
   revalidatePath("/admin/variants");
@@ -75,14 +92,17 @@ export async function updateVariantOption(formData: FormData) {
   await assertAdminAction();
 
   const id = getRequiredString(formData, "id");
-  const variantTypeId = getRequiredString(formData, "variantTypeId");
   const name = getRequiredString(formData, "name");
-  const internalName = getRequiredString(formData, "internalName").toLowerCase();
+  const internalName = getRequiredString(
+    formData,
+    "internalName",
+  ).toLowerCase();
   const description = getOptionalString(formData, "description");
+  const kind = parseOptionKind(getRequiredString(formData, "kind"));
 
-  await prisma.variantOption.update({
+  await prisma.option.update({
     where: { id },
-    data: { variantTypeId, name, internalName, description },
+    data: { name, internalName, description, kind },
   });
 
   revalidatePath("/admin/variants");
@@ -93,7 +113,7 @@ export async function deleteVariantOption(formData: FormData) {
 
   const id = getRequiredString(formData, "id");
 
-  await prisma.variantOption.delete({ where: { id } });
+  await prisma.option.delete({ where: { id } });
 
   revalidatePath("/admin/variants");
 }

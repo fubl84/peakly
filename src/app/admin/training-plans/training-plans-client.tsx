@@ -12,7 +12,12 @@ import {
 } from "./actions";
 import { useMemo, useState, useTransition } from "react";
 
-type VariantOptionItem = {
+type VariantItem = {
+  id: string;
+  name: string;
+};
+
+type OptionItem = {
   id: string;
   name: string;
 };
@@ -25,8 +30,13 @@ type TrainingPlanItem = {
   videoUrl: string | null;
   weekStart: number;
   weekEnd: number;
-  variantOptionId: string | null;
-  variantOption: {
+  variantId: string | null;
+  variant: {
+    id: string;
+    name: string;
+  } | null;
+  optionId: string | null;
+  option: {
     id: string;
     name: string;
   } | null;
@@ -56,7 +66,8 @@ type MetricInputMode = "REPETITIONS" | "DURATION";
 
 type TrainingPlansClientProps = {
   plans: TrainingPlanItem[];
-  variantOptions: VariantOptionItem[];
+  variants: VariantItem[];
+  options: OptionItem[];
   exercises: ExerciseItem[];
 };
 
@@ -570,10 +581,12 @@ function TrainingPlanEditorModal({
 }
 
 function TrainingPlanFormFields({
-  variantOptions,
+  variants,
+  options,
   plan,
 }: {
-  variantOptions: VariantOptionItem[];
+  variants: VariantItem[];
+  options: OptionItem[];
   plan?: TrainingPlanItem;
 }) {
   return (
@@ -635,12 +648,20 @@ function TrainingPlanFormFields({
       </div>
       <label className="field">
         <span>Trainingsvariante</span>
-        <select
-          name="variantOptionId"
-          defaultValue={plan?.variantOptionId ?? ""}
-        >
+        <select name="variantId" defaultValue={plan?.variantId ?? ""}>
           <option value="">Keine Trainingsvariante</option>
-          {variantOptions.map((option) => (
+          {variants.map((variant) => (
+            <option key={variant.id} value={variant.id}>
+              {variant.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <span>Option</span>
+        <select name="optionId" defaultValue={plan?.optionId ?? ""}>
+          <option value="">Keine Option</option>
+          {options.map((option) => (
             <option key={option.id} value={option.id}>
               {option.name}
             </option>
@@ -653,7 +674,8 @@ function TrainingPlanFormFields({
 
 export function TrainingPlansClient({
   plans,
-  variantOptions,
+  variants,
+  options,
   exercises,
 }: TrainingPlansClientProps) {
   const [searchValue, setSearchValue] = useState("");
@@ -669,7 +691,7 @@ export function TrainingPlansClient({
     }
 
     return plans.filter((plan) =>
-      `${plan.name} ${plan.internalName} ${plan.description ?? ""} ${plan.videoUrl ?? ""} ${plan.variantOption?.name ?? ""}`
+      `${plan.name} ${plan.internalName} ${plan.description ?? ""} ${plan.videoUrl ?? ""} ${plan.variant?.name ?? ""} ${plan.option?.name ?? ""}`
         .toLowerCase()
         .includes(search),
     );
@@ -737,8 +759,9 @@ export function TrainingPlansClient({
               ) : null}
 
               <p className="muted">
-                Variante: {plan.variantOption?.name ?? "Keine"} · Übungen im
-                Plan: {plan.trainingExercises.length}
+                Variante: {plan.variant?.name ?? "Keine"} · Option:{" "}
+                {plan.option?.name ?? "Keine"} · Übungen im Plan:{" "}
+                {plan.trainingExercises.length}
               </p>
 
               <div className="admin-card-actions">
@@ -797,7 +820,7 @@ export function TrainingPlansClient({
               onSubmit={() => setIsCreateOpen(false)}
               style={{ maxWidth: "100%" }}
             >
-              <TrainingPlanFormFields variantOptions={variantOptions} />
+              <TrainingPlanFormFields variants={variants} options={options} />
               <button type="submit">Speichern</button>
             </form>
           </div>
@@ -834,7 +857,8 @@ export function TrainingPlansClient({
               style={{ maxWidth: "100%" }}
             >
               <TrainingPlanFormFields
-                variantOptions={variantOptions}
+                variants={variants}
+                options={options}
                 plan={editingPlan}
               />
               <button type="submit">Aktualisieren</button>

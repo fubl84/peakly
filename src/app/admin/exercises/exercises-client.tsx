@@ -7,12 +7,9 @@ import { useMemo, useState } from "react";
 type MetricType = "REPETITIONS" | "DURATION";
 type SideMode = "NONE" | "ONE_SIDE" | "BOTH_SIDES";
 
-type VariantOptionItem = {
+type OptionItem = {
   id: string;
   name: string;
-  variantType: {
-    name: string;
-  };
 };
 
 type ExerciseItem = {
@@ -23,19 +20,16 @@ type ExerciseItem = {
   metricType: MetricType;
   sideMode: SideMode;
   mediaUrl: string | null;
-  variantOptionId: string | null;
-  variantOption: {
+  optionId: string | null;
+  option: {
     id: string;
     name: string;
-    variantType: {
-      name: string;
-    };
   } | null;
 };
 
 type ExercisesClientProps = {
   exercises: ExerciseItem[];
-  variantOptions: VariantOptionItem[];
+  options: OptionItem[];
 };
 
 function normalize(value: string) {
@@ -62,10 +56,7 @@ function sideModeLabel(sideMode: SideMode) {
   return "Keine Seite";
 }
 
-export function ExercisesClient({
-  exercises,
-  variantOptions,
-}: ExercisesClientProps) {
+export function ExercisesClient({ exercises, options }: ExercisesClientProps) {
   const [searchValue, setSearchValue] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<ExerciseItem | null>(
@@ -80,7 +71,7 @@ export function ExercisesClient({
     }
 
     return exercises.filter((exercise) =>
-      `${exercise.name} ${exercise.internalName} ${exercise.description ?? ""} ${exercise.metricType} ${exercise.sideMode} ${exercise.mediaUrl ?? ""} ${exercise.variantOption?.name ?? ""} ${exercise.variantOption?.variantType.name ?? ""}`
+      `${exercise.name} ${exercise.internalName} ${exercise.description ?? ""} ${exercise.metricType} ${exercise.sideMode} ${exercise.mediaUrl ?? ""} ${exercise.option?.name ?? ""}`
         .toLowerCase()
         .includes(search),
     );
@@ -139,10 +130,7 @@ export function ExercisesClient({
               </p>
 
               <p className="muted">
-                Variante:{" "}
-                {exercise.variantOption
-                  ? `${exercise.variantOption.name} (${exercise.variantOption.variantType.name})`
-                  : "Keine"}
+                Option: {exercise.option?.name ?? "Keine"}
               </p>
 
               {exercise.mediaUrl ? (
@@ -234,12 +222,12 @@ export function ExercisesClient({
                 youtubePlaceholder="Video/YouTube URL (optional)"
               />
               <label className="field">
-                <span>Variante</span>
-                <select name="variantOptionId" defaultValue="">
-                  <option value="">Keine Variante</option>
-                  {variantOptions.map((option) => (
+                <span>Option</span>
+                <select name="optionId" defaultValue="">
+                  <option value="">Keine Option</option>
+                  {options.map((option) => (
                     <option key={option.id} value={option.id}>
-                      {option.name} ({option.variantType.name})
+                      {option.name}
                     </option>
                   ))}
                 </select>
@@ -329,15 +317,15 @@ export function ExercisesClient({
                 youtubePlaceholder="Video/YouTube URL (optional)"
               />
               <label className="field">
-                <span>Variante</span>
+                <span>Option</span>
                 <select
-                  name="variantOptionId"
-                  defaultValue={editingExercise.variantOptionId ?? ""}
+                  name="optionId"
+                  defaultValue={editingExercise.optionId ?? ""}
                 >
-                  <option value="">Keine Variante</option>
-                  {variantOptions.map((option) => (
+                  <option value="">Keine Option</option>
+                  {options.map((option) => (
                     <option key={option.id} value={option.id}>
-                      {option.name} ({option.variantType.name})
+                      {option.name}
                     </option>
                   ))}
                 </select>

@@ -51,13 +51,10 @@ export default async function DashboardPage() {
   const session = await requireAuth();
   const bundle = await resolveUserWeekBundle(session.user.id);
 
-  const [paths, variantTypes, userProfile] = await Promise.all([
+  const [paths, variants, userProfile] = await Promise.all([
     prisma.path.findMany({ orderBy: { name: "asc" } }),
-    prisma.variantType.findMany({
+    prisma.variant.findMany({
       orderBy: [{ kind: "asc" }, { name: "asc" }],
-      include: {
-        variantOptions: { orderBy: { name: "asc" } },
-      },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -146,8 +143,8 @@ export default async function DashboardPage() {
           userId: session.user.id,
           pathId: bundle.enrollment.pathId,
           week: bundle.week,
-          selectedVariantOptionIds: bundle.enrollment.selectedVariants.map(
-            (entry) => entry.variantOptionId,
+          selectedVariantIds: bundle.enrollment.selectedVariants.map(
+            (entry) => entry.variantId,
           ),
           categories: ["GENERAL", "MOTIVATION"],
         }),
@@ -196,6 +193,12 @@ export default async function DashboardPage() {
   );
   const generalInfoBlocks = infoBlocks.filter(
     (block) => block.category === "GENERAL",
+  );
+  const trainingVariants = variants.filter(
+    (variant) => variant.kind === "TRAINING",
+  );
+  const nutritionVariants = variants.filter(
+    (variant) => variant.kind === "NUTRITION",
   );
 
   return (
@@ -471,19 +474,33 @@ export default async function DashboardPage() {
               <input name="startDate" type="date" required />
             </label>
 
-            {variantTypes.map((type) => (
-              <label key={type.id} className="field">
-                Variante: {type.name} ({type.kind})
-                <select name={`variantType:${type.id}`} defaultValue="">
+            {trainingVariants.length > 0 ? (
+              <label className="field">
+                Trainingsvariante
+                <select name="variantKind:TRAINING" defaultValue="">
                   <option value="">Keine Auswahl</option>
-                  {type.variantOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
+                  {trainingVariants.map((variant) => (
+                    <option key={variant.id} value={variant.id}>
+                      {variant.name}
                     </option>
                   ))}
                 </select>
               </label>
-            ))}
+            ) : null}
+
+            {nutritionVariants.length > 0 ? (
+              <label className="field">
+                Ernährungsvariante
+                <select name="variantKind:NUTRITION" defaultValue="">
+                  <option value="">Keine Auswahl</option>
+                  {nutritionVariants.map((variant) => (
+                    <option key={variant.id} value={variant.id}>
+                      {variant.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <button type="submit">Teilnahme starten</button>
           </form>

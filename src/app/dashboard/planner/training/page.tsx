@@ -94,7 +94,7 @@ export default async function TrainingPlannerPage(
     where: { userId: session.user.id, isActive: true },
     include: {
       selectedVariants: {
-        select: { variantOptionId: true },
+        select: { variantId: true },
       },
       path: {
         select: { name: true },
@@ -144,15 +144,15 @@ export default async function TrainingPlannerPage(
     week,
   );
 
-  const selectedVariantOptionIds = enrollment.selectedVariants.map(
-    (entry: { variantOptionId: string }) => entry.variantOptionId,
+  const selectedVariantIds = enrollment.selectedVariants.map(
+    (entry: { variantId: string }) => entry.variantId,
   );
 
   const assignments = await resolveAssignmentsForEnrollmentWeek({
     prismaClient: prisma,
     pathId: enrollment.pathId,
     week,
-    selectedVariantOptionIds,
+    selectedVariantIds,
     kind: "TRAINING",
   });
 
@@ -251,7 +251,7 @@ export default async function TrainingPlannerPage(
     userId: session.user.id,
     pathId: enrollment.pathId,
     week,
-    selectedVariantOptionIds,
+    selectedVariantIds,
     categories: ["WORKOUT"],
   });
 

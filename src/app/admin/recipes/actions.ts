@@ -59,10 +59,10 @@ export async function createRecipe(formData: FormData) {
   const description = getOptionalString(formData, "description");
   const imageUrl = getOptionalString(formData, "imageUrl");
   const tips = getOptionalString(formData, "tips");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const variantId = getOptionalString(formData, "variantId");
 
   const recipe = await prisma.recipe.create({
-    data: { name, internalName, description, imageUrl, tips, variantOptionId },
+    data: { name, internalName, description, imageUrl, tips, variantId },
   });
 
   await recomputeRecipeNutritionCache(recipe.id);
@@ -302,11 +302,11 @@ export async function updateRecipe(formData: FormData) {
   const description = getOptionalString(formData, "description");
   const imageUrl = getOptionalString(formData, "imageUrl");
   const tips = getOptionalString(formData, "tips");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const variantId = getOptionalString(formData, "variantId");
 
   await prisma.recipe.update({
     where: { id },
-    data: { name, internalName, description, imageUrl, tips, variantOptionId },
+    data: { name, internalName, description, imageUrl, tips, variantId },
   });
 
   await recomputeRecipeNutritionCache(id);

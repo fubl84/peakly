@@ -13,7 +13,12 @@ import {
 } from "./actions";
 import { useMemo, useState, useTransition } from "react";
 
-type VariantOptionItem = {
+type VariantItem = {
+  id: string;
+  name: string;
+};
+
+type OptionItem = {
   id: string;
   name: string;
 };
@@ -50,8 +55,13 @@ type NutritionPlanItem = {
   description: string | null;
   weekStart: number;
   weekEnd: number;
-  variantOptionId: string | null;
-  variantOption: {
+  variantId: string | null;
+  variant: {
+    id: string;
+    name: string;
+  } | null;
+  optionId: string | null;
+  option: {
     id: string;
     name: string;
   } | null;
@@ -60,7 +70,8 @@ type NutritionPlanItem = {
 
 type NutritionPlansClientProps = {
   plans: NutritionPlanItem[];
-  variantOptions: VariantOptionItem[];
+  variants: VariantItem[];
+  options: OptionItem[];
   ingredients: IngredientItem[];
 };
 
@@ -102,10 +113,12 @@ function mealLabel(mealType: string) {
 }
 
 function NutritionPlanFormFields({
-  variantOptions,
+  variants,
+  options,
   plan,
 }: {
-  variantOptions: VariantOptionItem[];
+  variants: VariantItem[];
+  options: OptionItem[];
   plan?: NutritionPlanItem;
 }) {
   return (
@@ -161,12 +174,20 @@ function NutritionPlanFormFields({
       </div>
       <label className="field">
         <span>Ernaehrungsvariante</span>
-        <select
-          name="variantOptionId"
-          defaultValue={plan?.variantOptionId ?? ""}
-        >
+        <select name="variantId" defaultValue={plan?.variantId ?? ""}>
           <option value="">Keine Ernaehrungsvariante</option>
-          {variantOptions.map((option) => (
+          {variants.map((variant) => (
+            <option key={variant.id} value={variant.id}>
+              {variant.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <span>Option</span>
+        <select name="optionId" defaultValue={plan?.optionId ?? ""}>
+          <option value="">Keine Option</option>
+          {options.map((option) => (
             <option key={option.id} value={option.id}>
               {option.name}
             </option>
@@ -773,7 +794,8 @@ function NutritionPlanEditorModal({
 
 export function NutritionPlansClient({
   plans,
-  variantOptions,
+  variants,
+  options,
   ingredients,
 }: NutritionPlansClientProps) {
   const [searchValue, setSearchValue] = useState("");
@@ -791,7 +813,7 @@ export function NutritionPlansClient({
     }
 
     return plans.filter((plan) =>
-      `${plan.name} ${plan.internalName} ${plan.description ?? ""} ${plan.variantOption?.name ?? ""}`
+      `${plan.name} ${plan.internalName} ${plan.description ?? ""} ${plan.variant?.name ?? ""} ${plan.option?.name ?? ""}`
         .toLowerCase()
         .includes(search),
     );
@@ -851,7 +873,8 @@ export function NutritionPlansClient({
               {plan.description ? <p>{plan.description}</p> : null}
 
               <p className="muted">
-                Variante: {plan.variantOption?.name ?? "Keine"} · Eintraege:{" "}
+                Variante: {plan.variant?.name ?? "Keine"} · Option:{" "}
+                {plan.option?.name ?? "Keine"} · Eintraege:{" "}
                 {plan.mealEntries.length}
               </p>
 
@@ -917,7 +940,7 @@ export function NutritionPlansClient({
               onSubmit={() => setIsCreateOpen(false)}
               style={{ maxWidth: "100%" }}
             >
-              <NutritionPlanFormFields variantOptions={variantOptions} />
+              <NutritionPlanFormFields variants={variants} options={options} />
               <button type="submit">Speichern</button>
             </form>
           </div>
@@ -954,7 +977,8 @@ export function NutritionPlansClient({
               style={{ maxWidth: "100%" }}
             >
               <NutritionPlanFormFields
-                variantOptions={variantOptions}
+                variants={variants}
+                options={options}
                 plan={editingPlan}
               />
               <button type="submit">Aktualisieren</button>

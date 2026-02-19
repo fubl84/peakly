@@ -26,16 +26,14 @@ model UserPathEnrollment {
 model UserEnrollmentVariant {
   id               String             @id @default(cuid())
   enrollmentId     String
-  variantTypeId    String
-  variantOptionId  String
+  variantId        String
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
   enrollment   UserPathEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  variantType  VariantType        @relation(fields: [variantTypeId], references: [id], onDelete: Cascade)
-  variantOption VariantOption     @relation(fields: [variantOptionId], references: [id], onDelete: Cascade)
+  variant      Variant           @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@unique([enrollmentId, variantTypeId])
+  @@unique([enrollmentId, variantId])
 }
 
 datasource db {
@@ -51,6 +49,12 @@ enum RoleName {
 enum VariantKind {
   TRAINING
   NUTRITION
+}
+
+enum OptionKind {
+  TRAINING
+  NUTRITION
+  INFO
 }
 
 enum ExerciseMetricType {
@@ -242,17 +246,19 @@ model PathAssignment {
   weekStart        Int
   weekEnd          Int
   contentRefId     String
-  variantOptionId  String?
+  variantId        String?
+  optionId         String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
   path          Path           @relation(fields: [pathId], references: [id], onDelete: Cascade)
-  variantOption VariantOption? @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  variant       Variant?       @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  option        Option?        @relation(fields: [optionId], references: [id], onDelete: SetNull)
 
   @@index([pathId, kind, weekStart, weekEnd])
 }
 
-model VariantType {
+model Variant {
   id             String          @id @default(cuid())
   name           String
   internalName   String          @unique
@@ -260,30 +266,30 @@ model VariantType {
   kind           VariantKind
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  variantOptions VariantOption[]
+  pathAssignments PathAssignment[]
+  trainingPlans  TrainingPlan[]
+  nutritionPlans NutritionPlan[]
+  recipes        Recipe[]
   selectedByEnrollments UserEnrollmentVariant[]
 
   @@unique([name, kind])
 }
 
-model VariantOption {
+model Option {
   id              String            @id @default(cuid())
-  variantTypeId   String
   name            String
   internalName    String
+  kind            OptionKind
   description     String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  variantType     VariantType       @relation(fields: [variantTypeId], references: [id], onDelete: Cascade)
   pathAssignments PathAssignment[]
   exercises       Exercise[]
   nutritionPlans  NutritionPlan[]
   trainingPlans   TrainingPlan[]
-  recipes         Recipe[]
-  selectedByEnrollments UserEnrollmentVariant[]
 
-  @@unique([variantTypeId, internalName])
-  @@unique([variantTypeId, name])
+  @@unique([kind, internalName])
+  @@unique([kind, name])
 }
 
 model Exercise {
@@ -294,11 +300,11 @@ model Exercise {
   metricType            ExerciseMetricType
   sideMode              ExerciseSideMode     @default(NONE)
   mediaUrl              String?
-  variantOptionId       String?
+  optionId              String?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
 
-  variantOption         VariantOption?       @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  option                Option?              @relation(fields: [optionId], references: [id], onDelete: SetNull)
   trainingPlanExercises TrainingPlanExercise[]
 
   @@unique([name])
@@ -312,10 +318,12 @@ model TrainingPlan {
   videoUrl          String?
   weekStart         Int
   weekEnd           Int
-  variantOptionId   String?
+  variantId         String?
+  optionId          String?
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
-  variantOption     VariantOption?         @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  variant           Variant?               @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  option            Option?                @relation(fields: [optionId], references: [id], onDelete: SetNull)
   trainingExercises TrainingPlanExercise[]
   trainingCalendarEntries UserTrainingCalendarEntry[]
   workoutSessions UserWorkoutSession[]
@@ -397,10 +405,12 @@ model NutritionPlan {
   description     String?
   weekStart       Int
   weekEnd         Int
-  variantOptionId String?
+  variantId       String?
+  optionId        String?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
-  variantOption   VariantOption?           @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  variant         Variant?                 @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  option          Option?                  @relation(fields: [optionId], references: [id], onDelete: SetNull)
   mealEntries     NutritionPlanMealEntry[]
 }
 
@@ -441,7 +451,7 @@ model Recipe {
   description     String?
   imageUrl        String?
   tips            String?
-  variantOptionId String?
+  variantId       String?
   nutritionFat    Float?
   nutritionCarbs  Float?
   nutritionProtein Float?
@@ -456,7 +466,7 @@ model Recipe {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
-  variantOption VariantOption?    @relation(fields: [variantOptionId], references: [id], onDelete: SetNull)
+  variant      Variant?         @relation(fields: [variantId], references: [id], onDelete: SetNull)
   ingredients   RecipeIngredient[]
   steps         RecipeStep[]
   nutritionCalendarEntries UserNutritionCalendarEntry[]

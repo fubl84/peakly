@@ -2,11 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { TrainingPlansClient } from "./training-plans-client";
 
 export default async function AdminTrainingPlansPage() {
-  const [plans, variantOptions, exercises] = await Promise.all([
+  const [plans, variants, options, exercises] = await Promise.all([
     prisma.trainingPlan.findMany({
       orderBy: [{ weekStart: "asc" }, { name: "asc" }],
       include: {
-        variantOption: {
+        variant: {
+          select: { id: true, name: true },
+        },
+        option: {
           select: { id: true, name: true },
         },
         trainingExercises: {
@@ -23,8 +26,13 @@ export default async function AdminTrainingPlansPage() {
         },
       },
     }),
-    prisma.variantOption.findMany({
-      where: { variantType: { kind: "TRAINING" } },
+    prisma.variant.findMany({
+      where: { kind: "TRAINING" },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.option.findMany({
+      where: { kind: "TRAINING" },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
@@ -41,7 +49,8 @@ export default async function AdminTrainingPlansPage() {
   return (
     <TrainingPlansClient
       plans={plans}
-      variantOptions={variantOptions}
+      variants={variants}
+      options={options}
       exercises={exercises}
     />
   );

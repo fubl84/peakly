@@ -105,7 +105,8 @@ export async function createNutritionPlan(formData: FormData) {
   const description = getOptionalString(formData, "description");
   const weekStart = getRequiredInt(formData, "weekStart");
   const weekEnd = getRequiredInt(formData, "weekEnd");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const variantId = getOptionalString(formData, "variantId");
+  const optionId = getOptionalString(formData, "optionId");
 
   assertWeekRange(weekStart, weekEnd);
 
@@ -116,7 +117,8 @@ export async function createNutritionPlan(formData: FormData) {
       description,
       weekStart,
       weekEnd,
-      variantOptionId,
+      variantId,
+      optionId,
     },
   });
 
@@ -175,7 +177,8 @@ export async function duplicateNutritionPlan(formData: FormData) {
         description: sourcePlan.description,
         weekStart: sourcePlan.weekStart,
         weekEnd: sourcePlan.weekEnd,
-        variantOptionId: sourcePlan.variantOptionId,
+        variantId: sourcePlan.variantId,
+        optionId: sourcePlan.optionId,
       },
     });
 
@@ -237,7 +240,8 @@ export async function updateNutritionPlan(formData: FormData) {
   const description = getOptionalString(formData, "description");
   const weekStart = getRequiredInt(formData, "weekStart");
   const weekEnd = getRequiredInt(formData, "weekEnd");
-  const variantOptionId = getOptionalString(formData, "variantOptionId");
+  const variantId = getOptionalString(formData, "variantId");
+  const optionId = getOptionalString(formData, "optionId");
 
   assertWeekRange(weekStart, weekEnd);
 
@@ -249,7 +253,8 @@ export async function updateNutritionPlan(formData: FormData) {
       description,
       weekStart,
       weekEnd,
-      variantOptionId,
+      variantId,
+      optionId,
     },
   });
 

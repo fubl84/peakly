@@ -11,77 +11,62 @@ import {
 import { useMemo, useState } from "react";
 
 type VariantKind = "TRAINING" | "NUTRITION";
+type OptionKind = VariantKind | "INFO";
 
-type VariantTypeItem = {
+type VariantItem = {
   id: string;
   name: string;
   internalName: string;
   description: string | null;
   kind: VariantKind;
-  variantOptions: {
-    id: string;
-    name: string;
-    internalName: string;
-  }[];
 };
 
-type VariantOptionItem = {
+type OptionItem = {
   id: string;
-  variantTypeId: string;
   name: string;
   internalName: string;
   description: string | null;
-  variantType: {
-    id: string;
-    name: string;
-    kind: VariantKind;
-  };
+  kind: OptionKind;
 };
 
 type VariantsClientProps = {
-  types: VariantTypeItem[];
-  options: VariantOptionItem[];
+  variants: VariantItem[];
+  options: OptionItem[];
 };
 
-type ViewMode = "types" | "options";
+type ViewMode = "variants" | "options";
 type ModalMode = "create" | "edit";
-type EditorKind = "type" | "option";
+type EditorKind = "variant" | "option";
 
 function normalize(input: string) {
   return input.trim().toLowerCase();
 }
 
-export function VariantsClient({ types, options }: VariantsClientProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("types");
+export function VariantsClient({ variants, options }: VariantsClientProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>("variants");
   const [searchValue, setSearchValue] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createKind, setCreateKind] = useState<EditorKind>("type");
+  const [createKind, setCreateKind] = useState<EditorKind>("variant");
 
   const [editState, setEditState] = useState<
-    | { mode: ModalMode; kind: "type"; entry: VariantTypeItem }
-    | { mode: ModalMode; kind: "option"; entry: VariantOptionItem }
+    | { mode: ModalMode; kind: "variant"; entry: VariantItem }
+    | { mode: ModalMode; kind: "option"; entry: OptionItem }
     | null
   >(null);
 
   const search = normalize(searchValue);
 
-  const filteredTypes = useMemo(() => {
+  const filteredVariants = useMemo(() => {
     if (!search) {
-      return types;
+      return variants;
     }
 
-    return types.filter((type) => {
-      const optionMatches = type.variantOptions.some((option) =>
-        `${option.name} ${option.internalName}`.toLowerCase().includes(search),
-      );
-
-      return (
-        `${type.name} ${type.internalName} ${type.description ?? ""} ${type.kind}`
-          .toLowerCase()
-          .includes(search) || optionMatches
-      );
+    return variants.filter((variant) => {
+      return `${variant.name} ${variant.internalName} ${variant.description ?? ""} ${variant.kind}`
+        .toLowerCase()
+        .includes(search);
     });
-  }, [search, types]);
+  }, [search, variants]);
 
   const filteredOptions = useMemo(() => {
     if (!search) {
@@ -89,14 +74,14 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
     }
 
     return options.filter((option) =>
-      `${option.name} ${option.internalName} ${option.description ?? ""} ${option.variantType.name} ${option.variantType.kind}`
+      `${option.name} ${option.internalName} ${option.description ?? ""} ${option.kind}`
         .toLowerCase()
         .includes(search),
     );
   }, [options, search]);
 
   const openCreate = () => {
-    setCreateKind(viewMode === "types" ? "type" : "option");
+    setCreateKind(viewMode === "variants" ? "variant" : "option");
     setIsCreateOpen(true);
   };
 
@@ -108,7 +93,7 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
             Varianten
           </h1>
           <p className="muted">
-            Verwalte Variantentypen und Variantenoptionen.
+            Verwalte Varianten (Filter) und Optionen (Gruppierung).
           </p>
         </div>
 
@@ -133,10 +118,10 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
           />
           <button
             type="button"
-            className={`admin-view-toggle ${viewMode === "types" ? "is-active" : ""}`}
-            onClick={() => setViewMode("types")}
+            className={`admin-view-toggle ${viewMode === "variants" ? "is-active" : ""}`}
+            onClick={() => setViewMode("variants")}
           >
-            Typen
+            Varianten
           </button>
           <button
             type="button"
@@ -157,46 +142,39 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
         </label>
       </section>
 
-      {viewMode === "types" ? (
+      {viewMode === "variants" ? (
         <section className="admin-list-stack">
-          {filteredTypes.length === 0 ? (
-            <p className="muted">Keine Variantentypen gefunden.</p>
+          {filteredVariants.length === 0 ? (
+            <p className="muted">Keine Varianten gefunden.</p>
           ) : (
-            filteredTypes.map((type) => (
-              <article key={type.id} className="admin-list-card">
+            filteredVariants.map((variant) => (
+              <article key={variant.id} className="admin-list-card">
                 <div className="admin-list-card-head">
                   <div className="admin-list-title-wrap">
-                    <h2>{type.name}</h2>
-                    <p className="muted">{type.internalName}</p>
+                    <h2>{variant.name}</h2>
+                    <p className="muted">{variant.internalName}</p>
                   </div>
-                  <span className="role-pill">{type.kind}</span>
+                  <span className="role-pill">{variant.kind}</span>
                 </div>
 
-                {type.description ? <p>{type.description}</p> : null}
-
-                {type.variantOptions.length > 0 ? (
-                  <p className="muted">
-                    Optionen:{" "}
-                    {type.variantOptions
-                      .map((option) => option.name)
-                      .join(", ")}
-                  </p>
-                ) : (
-                  <p className="muted">Noch keine Optionen.</p>
-                )}
+                {variant.description ? <p>{variant.description}</p> : null}
 
                 <div className="admin-card-actions">
                   <button
                     type="button"
                     className="admin-secondary-button"
                     onClick={() =>
-                      setEditState({ mode: "edit", kind: "type", entry: type })
+                      setEditState({
+                        mode: "edit",
+                        kind: "variant",
+                        entry: variant,
+                      })
                     }
                   >
                     Bearbeiten
                   </button>
                   <form action={deleteVariantType}>
-                    <input type="hidden" name="id" value={type.id} />
+                    <input type="hidden" name="id" value={variant.id} />
                     <button type="submit" className="admin-danger-button">
                       Löschen
                     </button>
@@ -209,7 +187,7 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
       ) : (
         <section className="admin-list-stack">
           {filteredOptions.length === 0 ? (
-            <p className="muted">Keine Variantenoptionen gefunden.</p>
+            <p className="muted">Keine Optionen gefunden.</p>
           ) : (
             filteredOptions.map((option) => (
               <article key={option.id} className="admin-list-card">
@@ -218,11 +196,10 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
                     <h2>{option.name}</h2>
                     <p className="muted">{option.internalName}</p>
                   </div>
-                  <span className="role-pill">{option.variantType.name}</span>
+                  <span className="role-pill">{option.kind}</span>
                 </div>
 
                 {option.description ? <p>{option.description}</p> : null}
-                <p className="muted">Kategorie: {option.variantType.kind}</p>
 
                 <div className="admin-card-actions">
                   <button
@@ -285,10 +262,10 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
               />
               <button
                 type="button"
-                className={`admin-view-toggle ${createKind === "type" ? "is-active" : ""}`}
-                onClick={() => setCreateKind("type")}
+                className={`admin-view-toggle ${createKind === "variant" ? "is-active" : ""}`}
+                onClick={() => setCreateKind("variant")}
               >
-                Typ
+                Variante
               </button>
               <button
                 type="button"
@@ -299,7 +276,7 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
               </button>
             </div>
 
-            {createKind === "type" ? (
+            {createKind === "variant" ? (
               <form
                 action={createVariantType}
                 className="form-grid"
@@ -333,14 +310,11 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
                 onSubmit={() => setIsCreateOpen(false)}
               >
                 <label className="field">
-                  <span>Variantentyp</span>
-                  <select name="variantTypeId" required>
-                    <option value="">Variantentyp wählen</option>
-                    {types.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name} ({type.kind})
-                      </option>
-                    ))}
+                  <span>Bereich</span>
+                  <select name="kind" defaultValue="TRAINING" required>
+                    <option value="TRAINING">Training</option>
+                    <option value="NUTRITION">Ernährung</option>
+                    <option value="INFO">Info</option>
                   </select>
                 </label>
                 <label className="field">
@@ -376,9 +350,9 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
           >
             <div className="admin-modal-head">
               <h2>
-                {editState.kind === "type"
-                  ? "Variantentyp bearbeiten"
-                  : "Variantenoption bearbeiten"}
+                {editState.kind === "variant"
+                  ? "Variante bearbeiten"
+                  : "Option bearbeiten"}
               </h2>
               <button
                 type="button"
@@ -389,7 +363,7 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
               </button>
             </div>
 
-            {editState.kind === "type" ? (
+            {editState.kind === "variant" ? (
               <form
                 action={updateVariantType}
                 className="form-grid"
@@ -441,17 +415,15 @@ export function VariantsClient({ types, options }: VariantsClientProps) {
               >
                 <input type="hidden" name="id" value={editState.entry.id} />
                 <label className="field">
-                  <span>Variantentyp</span>
+                  <span>Bereich</span>
                   <select
-                    name="variantTypeId"
-                    defaultValue={editState.entry.variantTypeId}
+                    name="kind"
+                    defaultValue={editState.entry.kind}
                     required
                   >
-                    {types.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name} ({type.kind})
-                      </option>
-                    ))}
+                    <option value="TRAINING">Training</option>
+                    <option value="NUTRITION">Ernährung</option>
+                    <option value="INFO">Info</option>
                   </select>
                 </label>
                 <label className="field">

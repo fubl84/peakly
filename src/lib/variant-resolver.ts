@@ -4,7 +4,7 @@ export async function resolveAssignmentsForEnrollmentWeek(args: {
   prismaClient: PrismaClient;
   pathId: string;
   week: number;
-  selectedVariantOptionIds: string[];
+  selectedVariantIds: string[];
   kind?: PathAssignmentKind;
 }) {
   const assignments = await args.prismaClient.pathAssignment.findMany({
@@ -13,7 +13,7 @@ export async function resolveAssignmentsForEnrollmentWeek(args: {
       weekStart: { lte: args.week },
       weekEnd: { gte: args.week },
       ...(args.kind ? { kind: args.kind } : {}),
-      OR: [{ variantOptionId: null }, { variantOptionId: { in: args.selectedVariantOptionIds } }],
+      OR: [{ variantId: null }, { variantId: { in: args.selectedVariantIds } }],
     },
     orderBy: [{ kind: "asc" }, { weekStart: "asc" }],
   });

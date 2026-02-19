@@ -81,23 +81,20 @@ export async function POST(request: Request) {
       where: { userId, isActive: true },
       include: {
         selectedVariants: {
-          select: { variantOptionId: true },
+          select: { variantId: true },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    const selectedVariantOptionIds =
+    const selectedVariantIds =
       enrollment?.selectedVariants.map(
-        (entry: { variantOptionId: string }) => entry.variantOptionId,
+        (entry: { variantId: string }) => entry.variantId,
       ) ?? [];
 
     const recipes = (await prisma.recipe.findMany({
       where: {
-        OR: [
-          { variantOptionId: null },
-          { variantOptionId: { in: selectedVariantOptionIds } },
-        ],
+        OR: [{ variantId: null }, { variantId: { in: selectedVariantIds } }],
       },
       select: {
         name: true,

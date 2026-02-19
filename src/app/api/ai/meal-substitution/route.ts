@@ -26,7 +26,7 @@ type AllowedRecipe = {
   id: string;
   name: string;
   description: string | null;
-  variantOptionId: string | null;
+  variantId: string | null;
 };
 
 function normalizeMode(value: unknown): SuggestionMode {
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
       include: {
         selectedVariants: {
           include: {
-            variantOption: {
+            variant: {
               select: { id: true, name: true },
             },
           },
@@ -211,23 +211,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const selectedVariantOptionIds = enrollment.selectedVariants.map(
-      (entry: { variantOptionId: string }) => entry.variantOptionId,
+    const selectedVariantIds = enrollment.selectedVariants.map(
+      (entry: { variantId: string }) => entry.variantId,
     );
 
     const allowedRecipes = await prisma.recipe.findMany({
       where: {
-        OR: [
-          { variantOptionId: null },
-          { variantOptionId: { in: selectedVariantOptionIds } },
-        ],
+        OR: [{ variantId: null }, { variantId: { in: selectedVariantIds } }],
       },
       orderBy: { name: "asc" },
       select: {
         id: true,
         name: true,
         description: true,
-        variantOptionId: true,
+        variantId: true,
       },
       take: 80,
     });
@@ -260,10 +257,7 @@ export async function POST(request: Request) {
     }
 
     const variantContext = enrollment.selectedVariants
-      .map(
-        (entry: { variantOption: { name: string } }) =>
-          `- ${entry.variantOption.name}`,
-      )
+      .map((entry: { variant: { name: string } }) => `- ${entry.variant.name}`)
       .join("\n");
 
     const recipeContext = allowedRecipes
@@ -340,7 +334,7 @@ export async function POST(request: Request) {
         data: validated,
         meta: {
           allowedRecipeCount: allowedRecipes.length,
-          variantSelectionCount: selectedVariantOptionIds.length,
+          variantSelectionCount: selectedVariantIds.length,
         },
       }),
     );

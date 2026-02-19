@@ -62,7 +62,12 @@ async function getAssignmentDefaults(
   if (kind === "TRAINING") {
     const trainingPlan = await prisma.trainingPlan.findUnique({
       where: { id: contentRefId },
-      select: { weekStart: true, weekEnd: true, variantOptionId: true },
+      select: {
+        weekStart: true,
+        weekEnd: true,
+        variantId: true,
+        optionId: true,
+      },
     });
 
     if (!trainingPlan) {
@@ -72,14 +77,20 @@ async function getAssignmentDefaults(
     return {
       weekStart: trainingPlan.weekStart,
       weekEnd: trainingPlan.weekEnd,
-      variantOptionId: trainingPlan.variantOptionId,
+      variantId: trainingPlan.variantId,
+      optionId: trainingPlan.optionId,
     };
   }
 
   if (kind === "NUTRITION") {
     const nutritionPlan = await prisma.nutritionPlan.findUnique({
       where: { id: contentRefId },
-      select: { weekStart: true, weekEnd: true, variantOptionId: true },
+      select: {
+        weekStart: true,
+        weekEnd: true,
+        variantId: true,
+        optionId: true,
+      },
     });
 
     if (!nutritionPlan) {
@@ -89,7 +100,8 @@ async function getAssignmentDefaults(
     return {
       weekStart: nutritionPlan.weekStart,
       weekEnd: nutritionPlan.weekEnd,
-      variantOptionId: nutritionPlan.variantOptionId,
+      variantId: nutritionPlan.variantId,
+      optionId: nutritionPlan.optionId,
     };
   }
 
@@ -112,7 +124,8 @@ async function getAssignmentDefaults(
   return {
     weekStart: infoBlock.weekStart ?? 1,
     weekEnd: infoBlock.weekEnd ?? 1,
-    variantOptionId: null,
+    variantId: null,
+    optionId: null,
     isFullPath: infoBlock.isFullPath,
   };
 }
@@ -122,7 +135,8 @@ async function assertNoOverlapConflict(args: {
   kind: PathAssignmentKind;
   weekStart: number;
   weekEnd: number;
-  variantOptionId: string | null;
+  variantId: string | null;
+  optionId: string | null;
   contentRefId: string;
   ignoreId?: string;
 }) {
@@ -133,7 +147,8 @@ async function assertNoOverlapConflict(args: {
       weekStart: args.weekStart,
       weekEnd: args.weekEnd,
       contentRefId: args.contentRefId,
-      variantOptionId: args.variantOptionId,
+      variantId: args.variantId,
+      optionId: args.optionId,
       ...(args.ignoreId ? { NOT: { id: args.ignoreId } } : {}),
     },
     select: { id: true },
@@ -186,7 +201,8 @@ export async function createPath(
       contentRefId: string;
       weekStart: number;
       weekEnd: number;
-      variantOptionId: string | null;
+      variantId: string | null;
+      optionId: string | null;
       isFullPath?: boolean;
     }> = [];
 
@@ -197,7 +213,8 @@ export async function createPath(
         contentRefId: trainingPlanId,
         weekStart: defaults.weekStart,
         weekEnd: defaults.weekEnd,
-        variantOptionId: defaults.variantOptionId,
+        variantId: defaults.variantId,
+        optionId: defaults.optionId,
       });
     }
 
@@ -211,7 +228,8 @@ export async function createPath(
         contentRefId: nutritionPlanId,
         weekStart: defaults.weekStart,
         weekEnd: defaults.weekEnd,
-        variantOptionId: defaults.variantOptionId,
+        variantId: defaults.variantId,
+        optionId: defaults.optionId,
       });
     }
 
@@ -222,7 +240,8 @@ export async function createPath(
         contentRefId: infoBlockId,
         weekStart: defaults.weekStart,
         weekEnd: defaults.weekEnd,
-        variantOptionId: null,
+        variantId: null,
+        optionId: null,
         isFullPath: defaults.isFullPath,
       });
     }
@@ -242,7 +261,8 @@ export async function createPath(
         weekStart,
         weekEnd,
         contentRefId: assignment.contentRefId,
-        variantOptionId: assignment.variantOptionId,
+        variantId: assignment.variantId,
+        optionId: assignment.optionId,
       });
 
       await tx.pathAssignment.create({
@@ -252,7 +272,8 @@ export async function createPath(
           contentRefId: assignment.contentRefId,
           weekStart,
           weekEnd,
-          variantOptionId: assignment.variantOptionId,
+          variantId: assignment.variantId,
+          optionId: assignment.optionId,
         },
       });
     }
@@ -315,7 +336,8 @@ export async function createPathAssignment(formData: FormData) {
   const pathMaxWeekEnd = await getPathMaxWeekEnd(pathId);
   const weekStart = defaults.isFullPath ? 1 : defaults.weekStart;
   const weekEnd = defaults.isFullPath ? pathMaxWeekEnd : defaults.weekEnd;
-  const variantOptionId = defaults.variantOptionId;
+  const variantId = defaults.variantId;
+  const optionId = defaults.optionId;
 
   assertWeekRange(weekStart, weekEnd);
   await assertContentRefExists(kind, contentRefId);
@@ -325,11 +347,20 @@ export async function createPathAssignment(formData: FormData) {
     weekStart,
     weekEnd,
     contentRefId,
-    variantOptionId,
+    variantId,
+    optionId,
   });
 
   await prisma.pathAssignment.create({
-    data: { pathId, kind, weekStart, weekEnd, contentRefId, variantOptionId },
+    data: {
+      pathId,
+      kind,
+      weekStart,
+      weekEnd,
+      contentRefId,
+      variantId,
+      optionId,
+    },
   });
 
   revalidatePath("/admin/paths");

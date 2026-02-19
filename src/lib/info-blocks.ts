@@ -6,7 +6,7 @@ type ResolveUserInfoBlocksArgs = {
   userId: string;
   pathId: string;
   week: number;
-  selectedVariantOptionIds: string[];
+  selectedVariantIds: string[];
   categories: InfoCategory[];
 };
 
@@ -26,7 +26,7 @@ export async function resolveUserInfoBlocksForWeek(
     prismaClient: args.prismaClient,
     pathId: args.pathId,
     week: args.week,
-    selectedVariantOptionIds: args.selectedVariantOptionIds,
+    selectedVariantIds: args.selectedVariantIds,
     kind: "INFO",
   });
 

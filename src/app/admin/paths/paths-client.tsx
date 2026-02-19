@@ -23,7 +23,8 @@ type PathAssignmentItem = {
   weekStart: number;
   weekEnd: number;
   contentRefId: string;
-  variantOptionId: string | null;
+  variantId: string | null;
+  optionId: string | null;
 };
 
 type PathItem = {

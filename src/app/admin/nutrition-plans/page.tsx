@@ -2,11 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { NutritionPlansClient } from "./nutrition-plans-client";
 
 export default async function AdminNutritionPlansPage() {
-  const [plans, variantOptions, ingredients] = await Promise.all([
+  const [plans, variants, options, ingredients] = await Promise.all([
     prisma.nutritionPlan.findMany({
       orderBy: [{ weekStart: "asc" }, { name: "asc" }],
       include: {
-        variantOption: {
+        variant: {
+          select: { id: true, name: true },
+        },
+        option: {
           select: { id: true, name: true },
         },
         mealEntries: {
@@ -27,8 +30,13 @@ export default async function AdminNutritionPlansPage() {
         },
       },
     }),
-    prisma.variantOption.findMany({
-      where: { variantType: { kind: "NUTRITION" } },
+    prisma.variant.findMany({
+      where: { kind: "NUTRITION" },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.option.findMany({
+      where: { kind: "NUTRITION" },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
@@ -41,7 +49,8 @@ export default async function AdminNutritionPlansPage() {
   return (
     <NutritionPlansClient
       plans={plans}
-      variantOptions={variantOptions}
+      variants={variants}
+      options={options}
       ingredients={ingredients}
     />
   );

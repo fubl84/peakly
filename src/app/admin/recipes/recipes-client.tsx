@@ -16,7 +16,7 @@ import {
 } from "./actions";
 import { useMemo, useState, useTransition } from "react";
 
-type VariantOptionItem = {
+type VariantItem = {
   id: string;
   name: string;
 };
@@ -33,8 +33,8 @@ type RecipeItem = {
   description: string | null;
   imageUrl: string | null;
   tips: string | null;
-  variantOptionId: string | null;
-  variantOption: {
+  variantId: string | null;
+  variant: {
     id: string;
     name: string;
   } | null;
@@ -65,7 +65,7 @@ type RecipeItem = {
 
 type RecipesClientProps = {
   recipes: RecipeItem[];
-  variantOptions: VariantOptionItem[];
+  variants: VariantItem[];
   ingredients: IngredientItem[];
 };
 
@@ -90,10 +90,10 @@ function normalize(value: string) {
 }
 
 function RecipeFormFields({
-  variantOptions,
+  variants,
   recipe,
 }: {
-  variantOptions: VariantOptionItem[];
+  variants: VariantItem[];
   recipe?: RecipeItem;
 }) {
   return (
@@ -129,14 +129,11 @@ function RecipeFormFields({
       </label>
       <label className="field">
         <span>Variante</span>
-        <select
-          name="variantOptionId"
-          defaultValue={recipe?.variantOptionId ?? ""}
-        >
+        <select name="variantId" defaultValue={recipe?.variantId ?? ""}>
           <option value="">Keine Variante</option>
-          {variantOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
+          {variants.map((variant) => (
+            <option key={variant.id} value={variant.id}>
+              {variant.name}
             </option>
           ))}
         </select>
@@ -909,7 +906,7 @@ function RecipeEditorModal({
 
 export function RecipesClient({
   recipes,
-  variantOptions,
+  variants,
   ingredients,
 }: RecipesClientProps) {
   const [searchValue, setSearchValue] = useState("");
@@ -925,7 +922,7 @@ export function RecipesClient({
     }
 
     return recipes.filter((recipe) =>
-      `${recipe.name} ${recipe.internalName} ${recipe.description ?? ""} ${recipe.variantOption?.name ?? ""}`
+      `${recipe.name} ${recipe.internalName} ${recipe.description ?? ""} ${recipe.variant?.name ?? ""}`
         .toLowerCase()
         .includes(search),
     );
@@ -985,7 +982,7 @@ export function RecipesClient({
 
               {recipe.description ? <p>{recipe.description}</p> : null}
               <p className="muted">
-                Variante: {recipe.variantOption?.name ?? "Keine"}
+                Variante: {recipe.variant?.name ?? "Keine"}
               </p>
 
               <div className="admin-card-actions">
@@ -1044,7 +1041,7 @@ export function RecipesClient({
               onSubmit={() => setIsCreateOpen(false)}
               style={{ maxWidth: "100%" }}
             >
-              <RecipeFormFields variantOptions={variantOptions} />
+              <RecipeFormFields variants={variants} />
               <button type="submit">Speichern</button>
             </form>
           </div>
@@ -1080,10 +1077,7 @@ export function RecipesClient({
               onSubmit={() => setEditingRecipe(null)}
               style={{ maxWidth: "100%" }}
             >
-              <RecipeFormFields
-                variantOptions={variantOptions}
-                recipe={editingRecipe}
-              />
+              <RecipeFormFields variants={variants} recipe={editingRecipe} />
               <button type="submit">Aktualisieren</button>
             </form>
           </div>

@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       where: { userId, isActive: true },
       include: {
         selectedVariants: {
-          select: { variantOptionId: true },
+          select: { variantId: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -148,15 +148,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const selectedVariantOptionIds = enrollment.selectedVariants.map(
-      (entry: { variantOptionId: string }) => entry.variantOptionId,
+    const selectedVariantIds = enrollment.selectedVariants.map(
+      (entry: { variantId: string }) => entry.variantId,
     );
 
     const nutritionAssignments = (await resolveAssignmentsForEnrollmentWeek({
       prismaClient: prisma,
       pathId: enrollment.pathId,
       week,
-      selectedVariantOptionIds,
+      selectedVariantIds,
       kind: "NUTRITION",
     })) as NutritionAssignment[];
 
@@ -219,10 +219,7 @@ export async function POST(request: Request) {
 
     const allowedRecipes = (await prisma.recipe.findMany({
       where: {
-        OR: [
-          { variantOptionId: null },
-          { variantOptionId: { in: selectedVariantOptionIds } },
-        ],
+        OR: [{ variantId: null }, { variantId: { in: selectedVariantIds } }],
       },
       select: {
         id: true,

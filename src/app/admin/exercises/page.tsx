@@ -2,26 +2,24 @@ import { prisma } from "@/lib/prisma";
 import { ExercisesClient } from "./exercises-client";
 
 export default async function AdminExercisesPage() {
-  const [exercises, variantOptions] = await Promise.all([
+  const [exercises, options] = await Promise.all([
     prisma.exercise.findMany({
       orderBy: { name: "asc" },
       include: {
-        variantOption: {
-          include: {
-            variantType: true,
+        option: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
     }),
-    prisma.variantOption.findMany({
+    prisma.option.findMany({
+      where: { kind: "TRAINING" },
       orderBy: { name: "asc" },
-      include: {
-        variantType: true,
-      },
+      select: { id: true, name: true },
     }),
   ]);
 
-  return (
-    <ExercisesClient exercises={exercises} variantOptions={variantOptions} />
-  );
+  return <ExercisesClient exercises={exercises} options={options} />;
 }

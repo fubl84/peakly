@@ -12,7 +12,7 @@ export async function createEnrollment(args: {
   userId: string;
   pathId: string;
   startDate: Date;
-  selectedVariants: Array<{ variantTypeId: string; variantOptionId: string }>;
+  selectedVariants: Array<{ variantId: string }>;
 }) {
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.userPathEnrollment.updateMany({
@@ -39,7 +39,7 @@ export async function createEnrollment(args: {
 
 export async function updateEnrollmentVariants(args: {
   enrollmentId: string;
-  variantUpdates: Array<{ variantTypeId: string; variantOptionId: string }>;
+  variantUpdates: Array<{ variantId: string }>;
 }) {
   const enrollment = await prisma.userPathEnrollment.findUnique({
     where: { id: args.enrollmentId },
@@ -59,16 +59,15 @@ export async function updateEnrollmentVariants(args: {
     for (const update of args.variantUpdates) {
       await tx.userEnrollmentVariant.upsert({
         where: {
-          enrollmentId_variantTypeId: {
+          enrollmentId_variantId: {
             enrollmentId: args.enrollmentId,
-            variantTypeId: update.variantTypeId,
+            variantId: update.variantId,
           },
         },
-        update: { variantOptionId: update.variantOptionId },
+        update: { variantId: update.variantId },
         create: {
           enrollmentId: args.enrollmentId,
-          variantTypeId: update.variantTypeId,
-          variantOptionId: update.variantOptionId,
+          variantId: update.variantId,
         },
       });
     }

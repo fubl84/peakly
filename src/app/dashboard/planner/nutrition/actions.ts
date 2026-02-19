@@ -175,7 +175,7 @@ export async function upsertNutritionCalendarEntryAction(
     where: { userId: session.user.id, isActive: true },
     include: {
       selectedVariants: {
-        select: { variantOptionId: true },
+        select: { variantId: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -195,15 +195,15 @@ export async function upsertNutritionCalendarEntryAction(
     throw new Error("Woche liegt außerhalb der Pfaddauer.");
   }
 
-  const selectedVariantOptionIds = enrollment.selectedVariants.map(
-    (entry: { variantOptionId: string }) => entry.variantOptionId,
+  const selectedVariantIds = enrollment.selectedVariants.map(
+    (entry: { variantId: string }) => entry.variantId,
   );
 
   const nutritionAssignments = await resolveAssignmentsForEnrollmentWeek({
     prismaClient: prisma,
     pathId: enrollment.pathId,
     week,
-    selectedVariantOptionIds,
+    selectedVariantIds,
     kind: "NUTRITION",
   });
 
@@ -232,10 +232,7 @@ export async function upsertNutritionCalendarEntryAction(
     const recipe = await prisma.recipe.findFirst({
       where: {
         id: recipeId,
-        OR: [
-          { variantOptionId: null },
-          { variantOptionId: { in: selectedVariantOptionIds } },
-        ],
+        OR: [{ variantId: null }, { variantId: { in: selectedVariantIds } }],
       },
       select: { id: true },
     });
@@ -295,7 +292,7 @@ export async function addNutritionSlotIngredientsToShoppingListAction(
     where: { userId: session.user.id, isActive: true },
     include: {
       selectedVariants: {
-        select: { variantOptionId: true },
+        select: { variantId: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -305,8 +302,8 @@ export async function addNutritionSlotIngredientsToShoppingListAction(
     throw new Error("Keine aktive Teilnahme gefunden.");
   }
 
-  const selectedVariantOptionIds = actorEnrollment.selectedVariants.map(
-    (entry: { variantOptionId: string }) => entry.variantOptionId,
+  const selectedVariantIds = actorEnrollment.selectedVariants.map(
+    (entry: { variantId: string }) => entry.variantId,
   );
 
   const sharedListContext = await resolveSharedListOwnerEnrollmentForWeek(
@@ -342,7 +339,7 @@ export async function addNutritionSlotIngredientsToShoppingListAction(
       prismaClient: prisma,
       pathId: actorEnrollment.pathId,
       week,
-      selectedVariantOptionIds,
+      selectedVariantIds,
       kind: "NUTRITION",
     });
 
