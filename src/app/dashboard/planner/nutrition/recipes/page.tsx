@@ -22,6 +22,12 @@ type RecipeRow = {
     ingredient: {
       name: string;
     };
+    alternatives: {
+      ingredient: {
+        id: string;
+        name: string;
+      };
+    }[];
   }[];
   steps: {
     position: number;
@@ -72,6 +78,21 @@ export default async function NutritionRecipesPage() {
               name: true,
             },
           },
+          alternatives: {
+            include: {
+              ingredient: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              ingredient: {
+                name: "asc",
+              },
+            },
+          },
         },
         orderBy: {
           ingredient: {
@@ -104,10 +125,14 @@ export default async function NutritionRecipesPage() {
       carbs: recipe.nutritionCarbs,
       fat: recipe.nutritionFat,
     },
-    ingredients: recipe.ingredients.map(
-      (entry) =>
-        `${formatAmount(entry.amount, entry.unit)} ${entry.ingredient.name}`,
-    ),
+    ingredients: recipe.ingredients.map((entry) => ({
+      name: entry.ingredient.name,
+      amountLabel: formatAmount(entry.amount, entry.unit),
+      alternatives: entry.alternatives.map((alternative) => ({
+        id: alternative.ingredient.id,
+        name: alternative.ingredient.name,
+      })),
+    })),
     steps: recipe.steps.map((step) => step.description),
   }));
 

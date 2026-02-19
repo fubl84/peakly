@@ -137,6 +137,47 @@ export async function deleteRecipeIngredient(formData: FormData) {
   revalidatePath("/admin/recipes");
 }
 
+export async function createRecipeIngredientAlternative(formData: FormData) {
+  await assertAdminAction();
+
+  const recipeIngredientId = getRequiredString(formData, "recipeIngredientId");
+  const ingredientId = getRequiredString(formData, "ingredientId");
+
+  const recipeIngredient = await prisma.recipeIngredient.findUnique({
+    where: { id: recipeIngredientId },
+    select: { ingredientId: true },
+  });
+
+  if (!recipeIngredient) {
+    throw new Error("Rezept-Zutat nicht gefunden.");
+  }
+
+  if (recipeIngredient.ingredientId === ingredientId) {
+    throw new Error(
+      "Primäre Zutat kann nicht als Alternative hinterlegt werden.",
+    );
+  }
+
+  await prisma.recipeIngredientAlternative.create({
+    data: {
+      recipeIngredientId,
+      ingredientId,
+    },
+  });
+
+  revalidatePath("/admin/recipes");
+}
+
+export async function deleteRecipeIngredientAlternative(formData: FormData) {
+  await assertAdminAction();
+
+  const id = getRequiredString(formData, "id");
+
+  await prisma.recipeIngredientAlternative.delete({ where: { id } });
+
+  revalidatePath("/admin/recipes");
+}
+
 export async function createRecipeStep(formData: FormData) {
   await assertAdminAction();
 

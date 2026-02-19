@@ -384,7 +384,9 @@ model Ingredient {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   mealEntries   NutritionPlanMealEntry[]
+  mealEntryAlternatives NutritionPlanMealEntryAlternative[]
   recipeEntries RecipeIngredient[]
+  recipeEntryAlternatives RecipeIngredientAlternative[]
   shoppingListItems UserShoppingListItem[]
 }
 
@@ -414,8 +416,22 @@ model NutritionPlanMealEntry {
 
   nutritionPlan NutritionPlan @relation(fields: [nutritionPlanId], references: [id], onDelete: Cascade)
   ingredient    Ingredient    @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  alternatives  NutritionPlanMealEntryAlternative[]
 
   @@index([nutritionPlanId, mealType])
+}
+
+model NutritionPlanMealEntryAlternative {
+  id          String                 @id @default(cuid())
+  mealEntryId String
+  ingredientId String
+  createdAt   DateTime               @default(now())
+
+  mealEntry   NutritionPlanMealEntry @relation(fields: [mealEntryId], references: [id], onDelete: Cascade)
+  ingredient  Ingredient             @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@unique([mealEntryId, ingredientId])
+  @@index([mealEntryId])
 }
 
 model Recipe {
@@ -571,6 +587,20 @@ model RecipeIngredient {
 
   recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  alternatives RecipeIngredientAlternative[]
+}
+
+model RecipeIngredientAlternative {
+  id               String           @id @default(cuid())
+  recipeIngredientId String
+  ingredientId     String
+  createdAt        DateTime         @default(now())
+
+  recipeIngredient RecipeIngredient @relation(fields: [recipeIngredientId], references: [id], onDelete: Cascade)
+  ingredient       Ingredient       @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@unique([recipeIngredientId, ingredientId])
+  @@index([recipeIngredientId])
 }
 
 model RecipeStep {

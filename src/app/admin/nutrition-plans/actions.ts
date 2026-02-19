@@ -200,3 +200,48 @@ export async function deleteNutritionPlanMealEntry(formData: FormData) {
 
   revalidatePath("/admin/nutrition-plans");
 }
+
+export async function createNutritionPlanMealEntryAlternative(
+  formData: FormData,
+) {
+  await assertAdminAction();
+
+  const mealEntryId = getRequiredString(formData, "mealEntryId");
+  const ingredientId = getRequiredString(formData, "ingredientId");
+
+  const mealEntry = await prisma.nutritionPlanMealEntry.findUnique({
+    where: { id: mealEntryId },
+    select: { ingredientId: true },
+  });
+
+  if (!mealEntry) {
+    throw new Error("Mahlzeit-Eintrag nicht gefunden.");
+  }
+
+  if (mealEntry.ingredientId === ingredientId) {
+    throw new Error(
+      "Primäre Zutat kann nicht als Alternative hinterlegt werden.",
+    );
+  }
+
+  await prisma.nutritionPlanMealEntryAlternative.create({
+    data: {
+      mealEntryId,
+      ingredientId,
+    },
+  });
+
+  revalidatePath("/admin/nutrition-plans");
+}
+
+export async function deleteNutritionPlanMealEntryAlternative(
+  formData: FormData,
+) {
+  await assertAdminAction();
+
+  const id = getRequiredString(formData, "id");
+
+  await prisma.nutritionPlanMealEntryAlternative.delete({ where: { id } });
+
+  revalidatePath("/admin/nutrition-plans");
+}

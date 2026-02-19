@@ -3,8 +3,10 @@
 import {
   createNutritionPlan,
   createNutritionPlanMealEntry,
+  createNutritionPlanMealEntryAlternative,
   deleteNutritionPlan,
   deleteNutritionPlanMealEntry,
+  deleteNutritionPlanMealEntryAlternative,
   updateNutritionPlan,
   updateNutritionPlanMealEntry,
 } from "./actions";
@@ -30,6 +32,14 @@ type MealEntryItem = {
     id: string;
     name: string;
   };
+  alternatives: {
+    id: string;
+    ingredientId: string;
+    ingredient: {
+      id: string;
+      name: string;
+    };
+  }[];
 };
 
 type NutritionPlanItem = {
@@ -184,7 +194,22 @@ function NutritionPlanEditorModal({
   const [pendingIngredientId, setPendingIngredientId] = useState<string | null>(
     null,
   );
+  const [alternativePickerMealEntryId, setAlternativePickerMealEntryId] =
+    useState<string | null>(null);
+  const [alternativeSearch, setAlternativeSearch] = useState("");
+  const [alternativeError, setAlternativeError] = useState<string | null>(null);
+  const [pendingAlternativeIngredientId, setPendingAlternativeIngredientId] =
+    useState<string | null>(null);
   const [isAddingPending, startAddTransition] = useTransition();
+
+  const mealEntryById = useMemo(
+    () => new Map(plan.mealEntries.map((entry) => [entry.id, entry])),
+    [plan.mealEntries],
+  );
+
+  const alternativePickerMealEntry = alternativePickerMealEntryId
+    ? (mealEntryById.get(alternativePickerMealEntryId) ?? null)
+    : null;
 
   const orderedMeals = useMemo(() => {
     const merged = new Set<string>([
@@ -219,6 +244,32 @@ function NutritionPlanEditorModal({
       normalize(ingredient.name).includes(ingredientSearchValue),
     );
   }, [ingredientSearchValue, ingredients]);
+
+  const alternativeSearchValue = normalize(alternativeSearch);
+  const alternativePickerIngredients = useMemo(() => {
+    if (!alternativePickerMealEntry) {
+      return [];
+    }
+
+    const blockedIngredientIds = new Set<string>([
+      alternativePickerMealEntry.ingredientId,
+      ...alternativePickerMealEntry.alternatives.map(
+        (entry) => entry.ingredientId,
+      ),
+    ]);
+
+    return ingredients.filter((ingredient) => {
+      if (blockedIngredientIds.has(ingredient.id)) {
+        return false;
+      }
+
+      if (!alternativeSearchValue) {
+        return true;
+      }
+
+      return normalize(ingredient.name).includes(alternativeSearchValue);
+    });
+  }, [alternativePickerMealEntry, alternativeSearchValue, ingredients]);
 
   function addMeal() {
     if (orderedMeals.includes(newMealType)) {
@@ -259,6 +310,65 @@ function NutritionPlanEditorModal({
         })
         .finally(() => {
           setPendingIngredientId(null);
+        });
+    });
+  }
+
+  function removeAlternativeIngredient(alternativeId: string) {
+    const formData = new FormData();
+    formData.set("id", alternativeId);
+
+    setAlternativeError(null);
+
+    startAddTransition(() => {
+      deleteNutritionPlanMealEntryAlternative(formData).catch(
+        (error: unknown) => {
+          setAlternativeError(
+            error instanceof Error
+              ? error.message
+              : "Alternative konnte nicht gelöscht werden.",
+          );
+        },
+      );
+    });
+  }
+
+  function openAlternativePicker(mealEntryId: string) {
+    setAlternativePickerMealEntryId(mealEntryId);
+    setAlternativeSearch("");
+    setAlternativeError(null);
+  }
+
+  function closeAlternativePicker() {
+    setAlternativePickerMealEntryId(null);
+    setAlternativeSearch("");
+    setAlternativeError(null);
+    setPendingAlternativeIngredientId(null);
+  }
+
+  function addAlternativeIngredient(ingredientId: string) {
+    if (!alternativePickerMealEntry) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("mealEntryId", alternativePickerMealEntry.id);
+    formData.set("ingredientId", ingredientId);
+
+    setPendingAlternativeIngredientId(ingredientId);
+    setAlternativeError(null);
+
+    startAddTransition(() => {
+      createNutritionPlanMealEntryAlternative(formData)
+        .catch((error: unknown) => {
+          setAlternativeError(
+            error instanceof Error
+              ? error.message
+              : "Alternative konnte nicht hinzugefügt werden.",
+          );
+        })
+        .finally(() => {
+          setPendingAlternativeIngredientId(null);
         });
     });
   }
@@ -496,6 +606,52 @@ function NutritionPlanEditorModal({
                             {entry.unit}
                           </p>
 
+                          <div
+                            className="admin-list-stack"
+                            style={{ gap: "0.35rem" }}
+                          >
+                            <div
+                              className="admin-card-actions"
+                              style={{ alignItems: "center" }}
+                            >
+                              <p className="muted" style={{ margin: 0 }}>
+                                Alternativen
+                              </p>
+                              <button
+                                type="button"
+                                className="admin-plus-button"
+                                onClick={() => openAlternativePicker(entry.id)}
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {entry.alternatives.length === 0 ? (
+                              <p className="muted">
+                                Keine Alternativen hinterlegt.
+                              </p>
+                            ) : (
+                              <div className="admin-card-actions">
+                                {entry.alternatives.map((alternative) => (
+                                  <button
+                                    key={alternative.id}
+                                    type="button"
+                                    className="admin-secondary-button"
+                                    style={{ padding: "0.32rem 0.55rem" }}
+                                    onClick={() =>
+                                      removeAlternativeIngredient(
+                                        alternative.id,
+                                      )
+                                    }
+                                    disabled={isAddingPending}
+                                  >
+                                    {alternative.ingredient.name} ×
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
                           <div className="admin-card-actions">
                             <button type="submit">Speichern</button>
                             <button
@@ -517,6 +673,99 @@ function NutritionPlanEditorModal({
           })}
         </div>
       </div>
+
+      {alternativePickerMealEntry ? (
+        <div
+          className="admin-modal-overlay"
+          role="presentation"
+          onClick={closeAlternativePicker}
+        >
+          <div
+            className="admin-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: "min(760px, 100%)" }}
+          >
+            <div className="admin-modal-head">
+              <div>
+                <h2>Alternative Zutat hinzufügen</h2>
+                <p className="muted" style={{ marginTop: "0.2rem" }}>
+                  Primär: {alternativePickerMealEntry.ingredient.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="admin-icon-close"
+                onClick={closeAlternativePicker}
+              >
+                ×
+              </button>
+            </div>
+
+            <label className="field" style={{ maxWidth: "100%" }}>
+              <span>Suche</span>
+              <input
+                value={alternativeSearch}
+                onChange={(event) => setAlternativeSearch(event.target.value)}
+                placeholder="Zutat suchen..."
+              />
+            </label>
+
+            {alternativeError ? (
+              <p className="training-warning-banner">{alternativeError}</p>
+            ) : null}
+
+            <div
+              className="admin-list-stack"
+              style={{
+                marginTop: "0.5rem",
+                maxHeight: "420px",
+                overflow: "auto",
+              }}
+            >
+              {alternativePickerIngredients.length === 0 ? (
+                <p className="muted">Keine passenden Zutaten gefunden.</p>
+              ) : (
+                alternativePickerIngredients.map((ingredient) => (
+                  <div
+                    key={ingredient.id}
+                    className="admin-list-card"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.75rem",
+                      background: "#fff",
+                    }}
+                  >
+                    <span>{ingredient.name}</span>
+                    <button
+                      type="button"
+                      className="admin-plus-button"
+                      disabled={
+                        isAddingPending &&
+                        pendingAlternativeIngredientId === ingredient.id
+                      }
+                      onClick={() => addAlternativeIngredient(ingredient.id)}
+                      style={{
+                        minWidth: "2rem",
+                        minHeight: "2rem",
+                        padding: 0,
+                      }}
+                    >
+                      {isAddingPending &&
+                      pendingAlternativeIngredientId === ingredient.id
+                        ? "…"
+                        : "+"}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

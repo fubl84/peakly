@@ -16,8 +16,23 @@ type RecipeCard = {
     carbs: number | null;
     fat: number | null;
   };
-  ingredients: string[];
+  ingredients: {
+    name: string;
+    amountLabel: string;
+    alternatives: {
+      id: string;
+      name: string;
+    }[];
+  }[];
   steps: string[];
+};
+
+type IngredientInfoModalState = {
+  ingredientName: string;
+  alternatives: {
+    id: string;
+    name: string;
+  }[];
 };
 
 type NutritionRecipesClientProps = {
@@ -44,6 +59,8 @@ export function NutritionRecipesClient({
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [assistantMessage, setAssistantMessage] = useState<string | null>(null);
   const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [ingredientInfoModal, setIngredientInfoModal] =
+    useState<IngredientInfoModalState | null>(null);
 
   const recipeById = useMemo(
     () => new Map(recipes.map((recipe) => [recipe.id, recipe])),
@@ -79,8 +96,10 @@ export function NutritionRecipesClient({
       const inText =
         recipe.name.toLowerCase().includes(normalizedQuery) ||
         (recipe.description ?? "").toLowerCase().includes(normalizedQuery) ||
-        recipe.ingredients.some((line) =>
-          line.toLowerCase().includes(normalizedQuery),
+        recipe.ingredients.some(
+          (entry) =>
+            entry.name.toLowerCase().includes(normalizedQuery) ||
+            entry.amountLabel.toLowerCase().includes(normalizedQuery),
         );
 
       return inText;
@@ -88,7 +107,7 @@ export function NutritionRecipesClient({
   }, [recipes, query, variantOnly, requireNutrition]);
 
   useEffect(() => {
-    if (!selectedRecipeId) {
+    if (!selectedRecipeId && !ingredientInfoModal) {
       return;
     }
 
@@ -98,6 +117,7 @@ export function NutritionRecipesClient({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setSelectedRecipeId(null);
+        setIngredientInfoModal(null);
       }
     }
 
@@ -107,7 +127,7 @@ export function NutritionRecipesClient({
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [selectedRecipeId]);
+  }, [selectedRecipeId, ingredientInfoModal]);
 
   async function askAssistant() {
     if (!assistantInput.trim()) {
@@ -338,8 +358,33 @@ export function NutritionRecipesClient({
                 <p className="muted">Keine Zutaten hinterlegt.</p>
               ) : (
                 <ul className="nutrition-detail-list">
-                  {selectedRecipe.ingredients.map((line, index) => (
-                    <li key={`${line}:${index}`}>{line}</li>
+                  {selectedRecipe.ingredients.map((entry, index) => (
+                    <li key={`${entry.name}:${entry.amountLabel}:${index}`}>
+                      <span className="nutrition-detail-ingredient-amount">
+                        {entry.amountLabel}
+                      </span>{" "}
+                      {entry.alternatives.length > 0 ? (
+                        <button
+                          type="button"
+                          className="nutrition-detail-ingredient-trigger"
+                          onClick={() =>
+                            setIngredientInfoModal({
+                              ingredientName: entry.name,
+                              alternatives: entry.alternatives,
+                            })
+                          }
+                        >
+                          <span className="nutrition-slot-ingredient-name is-dotted">
+                            {entry.name}
+                          </span>
+                          <span className="nutrition-slot-ingredient-info-icon">
+                            i
+                          </span>
+                        </button>
+                      ) : (
+                        <span>{entry.name}</span>
+                      )}
+                    </li>
                   ))}
                 </ul>
               )}
@@ -357,6 +402,48 @@ export function NutritionRecipesClient({
                 </ol>
               )}
             </section>
+          </section>
+        </div>
+      ) : null}
+
+      {ingredientInfoModal ? (
+        <div
+          className="path-modal-overlay"
+          role="presentation"
+          onClick={(event) => {
+            if (event.currentTarget === event.target) {
+              setIngredientInfoModal(null);
+            }
+          }}
+        >
+          <section
+            className="path-modal nutrition-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Alternativen für ${ingredientInfoModal.ingredientName}`}
+          >
+            <header className="path-modal-head">
+              <div className="path-modal-title-wrap">
+                <span className="path-product-chip">Alternative Zutaten</span>
+                <h3 className="path-modal-title">
+                  {ingredientInfoModal.ingredientName}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="path-modal-close"
+                onClick={() => setIngredientInfoModal(null)}
+                aria-label="Alternativen schließen"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+
+            <ul className="nutrition-detail-list">
+              {ingredientInfoModal.alternatives.map((alternative) => (
+                <li key={alternative.id}>{alternative.name}</li>
+              ))}
+            </ul>
           </section>
         </div>
       ) : null}

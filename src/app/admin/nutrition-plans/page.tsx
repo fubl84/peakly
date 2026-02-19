@@ -15,6 +15,14 @@ export default async function AdminNutritionPlansPage() {
             ingredient: {
               select: { id: true, name: true },
             },
+            alternatives: {
+              include: {
+                ingredient: {
+                  select: { id: true, name: true },
+                },
+              },
+              orderBy: { ingredient: { name: "asc" } },
+            },
           },
         },
       },

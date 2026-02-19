@@ -8,7 +8,12 @@ import {
 } from "./actions";
 
 type SlotIngredient = {
-  label: string;
+  name: string;
+  amountLabel: string;
+  alternatives: {
+    id: string;
+    name: string;
+  }[];
 };
 
 type SlotTargetNutrition = {
@@ -59,8 +64,23 @@ type RecipeDetail = {
     carbs: number | null;
     fat: number | null;
   };
-  ingredients: string[];
+  ingredients: {
+    name: string;
+    amountLabel: string;
+    alternatives: {
+      id: string;
+      name: string;
+    }[];
+  }[];
   steps: string[];
+};
+
+type IngredientInfoModalState = {
+  ingredientName: string;
+  alternatives: {
+    id: string;
+    name: string;
+  }[];
 };
 
 type NutritionPlannerClientProps = {
@@ -89,21 +109,6 @@ function resolveCurrentDayOfWeek() {
 
 function formatOneDecimal(value: number) {
   return value.toFixed(1);
-}
-
-function splitIngredientLine(line: string) {
-  const parts = line.split(" · ");
-  if (parts.length < 2) {
-    return {
-      name: line,
-      amount: "",
-    };
-  }
-
-  return {
-    name: parts.slice(0, -1).join(" · "),
-    amount: parts[parts.length - 1] ?? "",
-  };
 }
 
 function resolveDefaultExpandedDay(dayCards: DayCard[]) {
@@ -135,8 +140,12 @@ export function NutritionPlannerClient({
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [assistantMessage, setAssistantMessage] = useState<string | null>(null);
   const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [ingredientInfoModal, setIngredientInfoModal] =
+    useState<IngredientInfoModalState | null>(null);
 
-  const hasOpenModal = Boolean(assignModal || recipeDetailId);
+  const hasOpenModal = Boolean(
+    assignModal || recipeDetailId || ingredientInfoModal,
+  );
 
   useEffect(() => {
     if (!hasOpenModal) {
@@ -150,6 +159,7 @@ export function NutritionPlannerClient({
       if (event.key === "Escape") {
         setAssignModal(null);
         setRecipeDetailId(null);
+        setIngredientInfoModal(null);
       }
     }
 
@@ -416,23 +426,43 @@ export function NutritionPlannerClient({
                 <ul className="nutrition-slot-ingredient-list">
                   {(slotRecipe?.ingredients.length
                     ? slotRecipe.ingredients
-                    : slot.baseIngredients.map((entry) => entry.label)
-                  ).map((line, index) => {
-                    const ingredient = splitIngredientLine(line);
+                    : slot.baseIngredients
+                  ).map((ingredient, index) => {
+                    const hasAlternatives = ingredient.alternatives.length > 0;
 
                     return (
                       <li
-                        key={`${line}:${index}`}
+                        key={`${ingredient.name}:${ingredient.amountLabel}:${index}`}
                         className="nutrition-slot-ingredient-item"
                       >
-                        {ingredient.amount ? (
+                        {ingredient.amountLabel ? (
                           <span className="nutrition-slot-ingredient-amount">
-                            {ingredient.amount}
+                            {ingredient.amountLabel}
                           </span>
                         ) : null}
-                        <span className="nutrition-slot-ingredient-name">
-                          {ingredient.name}
-                        </span>
+                        {hasAlternatives ? (
+                          <button
+                            type="button"
+                            className="nutrition-slot-ingredient-trigger"
+                            onClick={() =>
+                              setIngredientInfoModal({
+                                ingredientName: ingredient.name,
+                                alternatives: ingredient.alternatives,
+                              })
+                            }
+                          >
+                            <span className="nutrition-slot-ingredient-name is-dotted">
+                              {ingredient.name}
+                            </span>
+                            <span className="nutrition-slot-ingredient-info-icon">
+                              i
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="nutrition-slot-ingredient-name">
+                            {ingredient.name}
+                          </span>
+                        )}
                       </li>
                     );
                   })}
@@ -782,8 +812,33 @@ export function NutritionPlannerClient({
                 <p className="muted">Keine Zutaten hinterlegt.</p>
               ) : (
                 <ul className="nutrition-detail-list">
-                  {selectedRecipeDetail.ingredients.map((line, index) => (
-                    <li key={`${line}:${index}`}>{line}</li>
+                  {selectedRecipeDetail.ingredients.map((entry, index) => (
+                    <li key={`${entry.name}:${entry.amountLabel}:${index}`}>
+                      <span className="nutrition-detail-ingredient-amount">
+                        {entry.amountLabel}
+                      </span>{" "}
+                      {entry.alternatives.length > 0 ? (
+                        <button
+                          type="button"
+                          className="nutrition-detail-ingredient-trigger"
+                          onClick={() =>
+                            setIngredientInfoModal({
+                              ingredientName: entry.name,
+                              alternatives: entry.alternatives,
+                            })
+                          }
+                        >
+                          <span className="nutrition-slot-ingredient-name is-dotted">
+                            {entry.name}
+                          </span>
+                          <span className="nutrition-slot-ingredient-info-icon">
+                            i
+                          </span>
+                        </button>
+                      ) : (
+                        <span>{entry.name}</span>
+                      )}
+                    </li>
                   ))}
                 </ul>
               )}
@@ -801,6 +856,49 @@ export function NutritionPlannerClient({
                 </ol>
               )}
             </section>
+          </section>
+        </div>
+      ) : null}
+
+      {ingredientInfoModal ? (
+        <div
+          className="path-modal-overlay"
+          role="presentation"
+          onClick={(event) => {
+            if (event.currentTarget === event.target) {
+              setIngredientInfoModal(null);
+            }
+          }}
+        >
+          <section
+            className="path-modal nutrition-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Alternativen für ${ingredientInfoModal.ingredientName}`}
+          >
+            <header className="path-modal-head">
+              <div className="path-modal-title-wrap">
+                <span className="path-product-chip">Alternative Zutaten</span>
+                <h3 className="path-modal-title">
+                  {ingredientInfoModal.ingredientName}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                className="path-modal-close"
+                onClick={() => setIngredientInfoModal(null)}
+                aria-label="Alternativen schließen"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+
+            <ul className="nutrition-detail-list">
+              {ingredientInfoModal.alternatives.map((alternative) => (
+                <li key={alternative.id}>{alternative.name}</li>
+              ))}
+            </ul>
           </section>
         </div>
       ) : null}

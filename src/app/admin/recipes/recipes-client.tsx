@@ -3,9 +3,11 @@
 import {
   createRecipe,
   createRecipeIngredient,
+  createRecipeIngredientAlternative,
   createRecipeStep,
   deleteRecipe,
   deleteRecipeIngredient,
+  deleteRecipeIngredientAlternative,
   deleteRecipeStep,
   reorderRecipeSteps,
   updateRecipe,
@@ -45,6 +47,14 @@ type RecipeItem = {
       id: string;
       name: string;
     };
+    alternatives: {
+      id: string;
+      ingredientId: string;
+      ingredient: {
+        id: string;
+        name: string;
+      };
+    }[];
   }[];
   steps: {
     id: string;
@@ -119,7 +129,10 @@ function RecipeFormFields({
       </label>
       <label className="field">
         <span>Variante</span>
-        <select name="variantOptionId" defaultValue={recipe?.variantOptionId ?? ""}>
+        <select
+          name="variantOptionId"
+          defaultValue={recipe?.variantOptionId ?? ""}
+        >
           <option value="">Keine Variante</option>
           {variantOptions.map((option) => (
             <option key={option.id} value={option.id}>
@@ -144,15 +157,27 @@ function RecipeEditorModal({
   const [ingredientPickerOpen, setIngredientPickerOpen] = useState(false);
   const [ingredientSearch, setIngredientSearch] = useState("");
   const [stepModalOpen, setStepModalOpen] = useState(false);
-  const [editingStep, setEditingStep] = useState<RecipeItem["steps"][number] | null>(
-    null,
-  );
+  const [editingStep, setEditingStep] = useState<
+    RecipeItem["steps"][number] | null
+  >(null);
   const [stepDraft, setStepDraft] = useState("");
   const [stepDragId, setStepDragId] = useState<string | null>(null);
   const [stepReorderError, setStepReorderError] = useState<string | null>(null);
-  const [ingredientFeedback, setIngredientFeedback] = useState<string | null>(null);
+  const [ingredientFeedback, setIngredientFeedback] = useState<string | null>(
+    null,
+  );
   const [ingredientError, setIngredientError] = useState<string | null>(null);
-  const [pendingIngredientId, setPendingIngredientId] = useState<string | null>(null);
+  const [pendingIngredientId, setPendingIngredientId] = useState<string | null>(
+    null,
+  );
+  const [
+    alternativePickerRecipeIngredientId,
+    setAlternativePickerRecipeIngredientId,
+  ] = useState<string | null>(null);
+  const [alternativeSearch, setAlternativeSearch] = useState("");
+  const [alternativeError, setAlternativeError] = useState<string | null>(null);
+  const [pendingAlternativeIngredientId, setPendingAlternativeIngredientId] =
+    useState<string | null>(null);
   const [isIngredientPending, startIngredientTransition] = useTransition();
   const [isStepReorderPending, startStepReorderTransition] = useTransition();
 
@@ -168,14 +193,51 @@ function RecipeEditorModal({
   }, [ingredientSearchValue, ingredients]);
 
   const ingredientById = useMemo(
-    () => new Map(recipe.ingredients.map((entry) => [entry.ingredientId, entry])),
+    () =>
+      new Map(recipe.ingredients.map((entry) => [entry.ingredientId, entry])),
     [recipe.ingredients],
   );
 
+  const recipeIngredientById = useMemo(
+    () => new Map(recipe.ingredients.map((entry) => [entry.id, entry])),
+    [recipe.ingredients],
+  );
+
+  const alternativePickerRecipeIngredient = alternativePickerRecipeIngredientId
+    ? (recipeIngredientById.get(alternativePickerRecipeIngredientId) ?? null)
+    : null;
+
   const orderedSteps = useMemo(
-    () => [...recipe.steps].sort((left, right) => left.position - right.position),
+    () =>
+      [...recipe.steps].sort((left, right) => left.position - right.position),
     [recipe.steps],
   );
+
+  const alternativeSearchValue = normalize(alternativeSearch);
+  const alternativePickerIngredients = useMemo(() => {
+    if (!alternativePickerRecipeIngredient) {
+      return [];
+    }
+
+    const blockedIngredientIds = new Set<string>([
+      alternativePickerRecipeIngredient.ingredientId,
+      ...alternativePickerRecipeIngredient.alternatives.map(
+        (entry) => entry.ingredientId,
+      ),
+    ]);
+
+    return ingredients.filter((ingredient) => {
+      if (blockedIngredientIds.has(ingredient.id)) {
+        return false;
+      }
+
+      if (!alternativeSearchValue) {
+        return true;
+      }
+
+      return normalize(ingredient.name).includes(alternativeSearchValue);
+    });
+  }, [alternativePickerRecipeIngredient, alternativeSearchValue, ingredients]);
 
   function openCreateStepModal() {
     setEditingStep(null);
@@ -206,7 +268,11 @@ function RecipeEditorModal({
       orderedIds.push(movedId);
     } else {
       const targetIndex = orderedIds.findIndex((id) => id === targetId);
-      orderedIds.splice(targetIndex < 0 ? orderedIds.length : targetIndex, 0, movedId);
+      orderedIds.splice(
+        targetIndex < 0 ? orderedIds.length : targetIndex,
+        0,
+        movedId,
+      );
     }
 
     setStepDragId(null);
@@ -222,6 +288,61 @@ function RecipeEditorModal({
           error instanceof Error
             ? error.message
             : "Schritt-Reihenfolge konnte nicht gespeichert werden.",
+        );
+      });
+    });
+  }
+
+  function openAlternativePicker(recipeIngredientId: string) {
+    setAlternativePickerRecipeIngredientId(recipeIngredientId);
+    setAlternativeSearch("");
+    setAlternativeError(null);
+  }
+
+  function closeAlternativePicker() {
+    setAlternativePickerRecipeIngredientId(null);
+    setAlternativeSearch("");
+    setAlternativeError(null);
+    setPendingAlternativeIngredientId(null);
+  }
+
+  function addAlternativeIngredient(ingredientId: string) {
+    if (!alternativePickerRecipeIngredient) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("recipeIngredientId", alternativePickerRecipeIngredient.id);
+    formData.set("ingredientId", ingredientId);
+
+    setPendingAlternativeIngredientId(ingredientId);
+    setAlternativeError(null);
+
+    startIngredientTransition(() => {
+      createRecipeIngredientAlternative(formData)
+        .catch((error: unknown) => {
+          setAlternativeError(
+            error instanceof Error
+              ? error.message
+              : "Alternative konnte nicht hinzugefuegt werden.",
+          );
+        })
+        .finally(() => setPendingAlternativeIngredientId(null));
+    });
+  }
+
+  function removeAlternativeIngredient(alternativeId: string) {
+    const formData = new FormData();
+    formData.set("id", alternativeId);
+
+    setAlternativeError(null);
+
+    startIngredientTransition(() => {
+      deleteRecipeIngredientAlternative(formData).catch((error: unknown) => {
+        setAlternativeError(
+          error instanceof Error
+            ? error.message
+            : "Alternative konnte nicht hinzugefuegt werden.",
         );
       });
     });
@@ -309,8 +430,8 @@ function RecipeEditorModal({
               <div className="admin-list-title-wrap">
                 <h2>Zutaten</h2>
                 <p className="muted">
-                  Ueber den Button Zutaten hinzufuegen oeffnest du die Suchliste zum
-                  Abhaken.
+                  Ueber den Button Zutaten hinzufuegen oeffnest du die Suchliste
+                  zum Abhaken.
                 </p>
               </div>
               <button
@@ -322,7 +443,9 @@ function RecipeEditorModal({
               </button>
             </div>
 
-            {ingredientFeedback ? <p className="muted">{ingredientFeedback}</p> : null}
+            {ingredientFeedback ? (
+              <p className="muted">{ingredientFeedback}</p>
+            ) : null}
             {ingredientError ? (
               <p className="training-warning-banner">{ingredientError}</p>
             ) : null}
@@ -330,7 +453,10 @@ function RecipeEditorModal({
             {recipe.ingredients.length === 0 ? (
               <p className="muted">Noch keine Zutaten im Rezept.</p>
             ) : (
-              <div className="admin-list-stack" style={{ marginTop: "0.25rem" }}>
+              <div
+                className="admin-list-stack"
+                style={{ marginTop: "0.25rem" }}
+              >
                 {recipe.ingredients
                   .slice()
                   .sort((left, right) =>
@@ -351,7 +477,10 @@ function RecipeEditorModal({
 
                         <label className="field">
                           <span>Zutat</span>
-                          <select name="ingredientId" defaultValue={entry.ingredientId}>
+                          <select
+                            name="ingredientId"
+                            defaultValue={entry.ingredientId}
+                          >
                             {ingredients.map((ingredient) => (
                               <option key={ingredient.id} value={ingredient.id}>
                                 {ingredient.name}
@@ -364,7 +493,8 @@ function RecipeEditorModal({
                           style={{
                             display: "grid",
                             gap: "0.5rem",
-                            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                            gridTemplateColumns:
+                              "minmax(0, 1fr) minmax(0, 1fr)",
                           }}
                         >
                           <label className="field">
@@ -390,6 +520,50 @@ function RecipeEditorModal({
                           </label>
                         </div>
 
+                        <div
+                          className="admin-list-stack"
+                          style={{ gap: "0.35rem" }}
+                        >
+                          <div
+                            className="admin-card-actions"
+                            style={{ alignItems: "center" }}
+                          >
+                            <p className="muted" style={{ margin: 0 }}>
+                              Alternativen
+                            </p>
+                            <button
+                              type="button"
+                              className="admin-plus-button"
+                              onClick={() => openAlternativePicker(entry.id)}
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {entry.alternatives.length === 0 ? (
+                            <p className="muted">
+                              Keine Alternativen hinterlegt.
+                            </p>
+                          ) : (
+                            <div className="admin-card-actions">
+                              {entry.alternatives.map((alternative) => (
+                                <button
+                                  key={alternative.id}
+                                  type="button"
+                                  className="admin-secondary-button"
+                                  style={{ padding: "0.32rem 0.55rem" }}
+                                  onClick={() =>
+                                    removeAlternativeIngredient(alternative.id)
+                                  }
+                                  disabled={isIngredientPending}
+                                >
+                                  {alternative.ingredient.name} ×
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                         <div className="admin-card-actions">
                           <button type="submit">Speichern</button>
                           <button
@@ -413,8 +587,8 @@ function RecipeEditorModal({
               <div className="admin-list-title-wrap">
                 <h2>Schritte</h2>
                 <p className="muted">
-                  Neue Schritte per Modal erfassen und Reihenfolge per Drag-and-drop
-                  aendern.
+                  Neue Schritte per Modal erfassen und Reihenfolge per
+                  Drag-and-drop aendern.
                 </p>
               </div>
               <button
@@ -433,7 +607,10 @@ function RecipeEditorModal({
             {orderedSteps.length === 0 ? (
               <p className="muted">Noch keine Schritte vorhanden.</p>
             ) : (
-              <div className="admin-list-stack" style={{ marginTop: "0.25rem" }}>
+              <div
+                className="admin-list-stack"
+                style={{ marginTop: "0.25rem" }}
+              >
                 {orderedSteps.map((step) => (
                   <article
                     key={step.id}
@@ -535,7 +712,11 @@ function RecipeEditorModal({
 
             <div
               className="admin-list-stack"
-              style={{ marginTop: "0.5rem", maxHeight: "420px", overflow: "auto" }}
+              style={{
+                marginTop: "0.5rem",
+                maxHeight: "420px",
+                overflow: "auto",
+              }}
             >
               {filteredIngredients.length === 0 ? (
                 <p className="muted">Keine Zutaten gefunden.</p>
@@ -543,7 +724,8 @@ function RecipeEditorModal({
                 filteredIngredients.map((ingredient) => {
                   const existing = ingredientById.get(ingredient.id);
                   const isPending =
-                    isIngredientPending && pendingIngredientId === ingredient.id;
+                    isIngredientPending &&
+                    pendingIngredientId === ingredient.id;
 
                   return (
                     <label
@@ -570,6 +752,99 @@ function RecipeEditorModal({
                     </label>
                   );
                 })
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {alternativePickerRecipeIngredient ? (
+        <div
+          className="admin-modal-overlay"
+          role="presentation"
+          onClick={closeAlternativePicker}
+        >
+          <div
+            className="admin-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: "min(760px, 100%)" }}
+          >
+            <div className="admin-modal-head">
+              <div>
+                <h2>Alternative Zutat hinzufuegen</h2>
+                <p className="muted" style={{ marginTop: "0.2rem" }}>
+                  Primaer: {alternativePickerRecipeIngredient.ingredient.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="admin-icon-close"
+                onClick={closeAlternativePicker}
+              >
+                ×
+              </button>
+            </div>
+
+            <label className="field" style={{ maxWidth: "100%" }}>
+              <span>Suche</span>
+              <input
+                value={alternativeSearch}
+                onChange={(event) => setAlternativeSearch(event.target.value)}
+                placeholder="Zutat suchen..."
+              />
+            </label>
+
+            {alternativeError ? (
+              <p className="training-warning-banner">{alternativeError}</p>
+            ) : null}
+
+            <div
+              className="admin-list-stack"
+              style={{
+                marginTop: "0.5rem",
+                maxHeight: "420px",
+                overflow: "auto",
+              }}
+            >
+              {alternativePickerIngredients.length === 0 ? (
+                <p className="muted">Keine passenden Zutaten gefunden.</p>
+              ) : (
+                alternativePickerIngredients.map((ingredient) => (
+                  <div
+                    key={ingredient.id}
+                    className="admin-list-card"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.75rem",
+                      background: "#fff",
+                    }}
+                  >
+                    <span>{ingredient.name}</span>
+                    <button
+                      type="button"
+                      className="admin-plus-button"
+                      disabled={
+                        isIngredientPending &&
+                        pendingAlternativeIngredientId === ingredient.id
+                      }
+                      onClick={() => addAlternativeIngredient(ingredient.id)}
+                      style={{
+                        minWidth: "2rem",
+                        minHeight: "2rem",
+                        padding: 0,
+                      }}
+                    >
+                      {isIngredientPending &&
+                      pendingAlternativeIngredientId === ingredient.id
+                        ? "…"
+                        : "+"}
+                    </button>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -703,12 +978,15 @@ export function RecipesClient({
                   <p className="muted">{recipe.internalName}</p>
                 </div>
                 <span className="role-pill">
-                  {recipe.steps.length} Schritte · {recipe.ingredients.length} Zutaten
+                  {recipe.steps.length} Schritte · {recipe.ingredients.length}{" "}
+                  Zutaten
                 </span>
               </div>
 
               {recipe.description ? <p>{recipe.description}</p> : null}
-              <p className="muted">Variante: {recipe.variantOption?.name ?? "Keine"}</p>
+              <p className="muted">
+                Variante: {recipe.variantOption?.name ?? "Keine"}
+              </p>
 
               <div className="admin-card-actions">
                 <button
@@ -802,7 +1080,10 @@ export function RecipesClient({
               onSubmit={() => setEditingRecipe(null)}
               style={{ maxWidth: "100%" }}
             >
-              <RecipeFormFields variantOptions={variantOptions} recipe={editingRecipe} />
+              <RecipeFormFields
+                variantOptions={variantOptions}
+                recipe={editingRecipe}
+              />
               <button type="submit">Aktualisieren</button>
             </form>
           </div>

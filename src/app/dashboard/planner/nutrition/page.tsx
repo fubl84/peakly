@@ -50,6 +50,12 @@ type RecipeOption = {
     ingredient: {
       name: string;
     };
+    alternatives: {
+      ingredient: {
+        id: string;
+        name: string;
+      };
+    }[];
   }[];
   steps: {
     position: number;
@@ -87,6 +93,12 @@ type BaseNutritionMealEntry = {
     gramsPerBunch: number | null;
     gramsPerCan: number | null;
   };
+  alternatives: {
+    ingredient: {
+      id: string;
+      name: string;
+    };
+  }[];
   nutritionPlan: {
     name: string;
   };
@@ -251,6 +263,21 @@ export default async function NutritionPlannerPage(
               gramsPerCan: true,
             },
           },
+          alternatives: {
+            include: {
+              ingredient: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              ingredient: {
+                name: "asc",
+              },
+            },
+          },
           nutritionPlan: { select: { name: true } },
         },
         orderBy: [
@@ -313,6 +340,21 @@ export default async function NutritionPlannerPage(
           ingredient: {
             select: {
               name: true,
+            },
+          },
+          alternatives: {
+            include: {
+              ingredient: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              ingredient: {
+                name: "asc",
+              },
             },
           },
         },
@@ -418,7 +460,12 @@ export default async function NutritionPlannerPage(
         targetNutrition: slotTargetsByMealType.get(slot.value) ?? null,
         recipeMatches: slotMatchesByMealType.get(slot.value) ?? [],
         baseIngredients: baseEntries.map((baseEntry) => ({
-          label: `${baseEntry.ingredient.name} · ${formatAmount(baseEntry.amount, baseEntry.unit)}`,
+          name: baseEntry.ingredient.name,
+          amountLabel: formatAmount(baseEntry.amount, baseEntry.unit),
+          alternatives: baseEntry.alternatives.map((entry) => ({
+            id: entry.ingredient.id,
+            name: entry.ingredient.name,
+          })),
         })),
       };
     }),
@@ -437,10 +484,14 @@ export default async function NutritionPlannerPage(
       carbs: recipe.nutritionCarbs,
       fat: recipe.nutritionFat,
     },
-    ingredients: recipe.ingredients.map(
-      (entry) =>
-        `${entry.ingredient.name} · ${formatAmount(entry.amount, entry.unit)}`,
-    ),
+    ingredients: recipe.ingredients.map((entry) => ({
+      name: entry.ingredient.name,
+      amountLabel: formatAmount(entry.amount, entry.unit),
+      alternatives: entry.alternatives.map((alternative) => ({
+        id: alternative.ingredient.id,
+        name: alternative.ingredient.name,
+      })),
+    })),
     steps: recipe.steps.map((step) => step.description),
   }));
 
