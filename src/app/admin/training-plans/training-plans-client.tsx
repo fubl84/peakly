@@ -6,6 +6,7 @@ import {
   createTrainingPlanExercise,
   deleteTrainingPlanExercise,
   deleteTrainingPlan,
+  duplicateTrainingSet,
   reorderTrainingPlanExercises,
   updateTrainingPlan,
 } from "./actions";
@@ -426,9 +427,38 @@ function TrainingPlanEditorModal({
                       {isReorderPending ? " · Speichert..." : ""}
                     </p>
                   </div>
-                  <span className="role-pill">
-                    {blockEntries.length} Uebungen
-                  </span>
+                  <div
+                    className="admin-card-actions"
+                    style={{ alignItems: "center" }}
+                  >
+                    {parseSetIndex(block) !== null ? (
+                      <form action={duplicateTrainingSet}>
+                        <input
+                          type="hidden"
+                          name="trainingPlanId"
+                          value={plan.id}
+                        />
+                        <input type="hidden" name="sourceBlock" value={block} />
+                        <button
+                          type="submit"
+                          className="admin-secondary-button"
+                          title="Set duplizieren"
+                          aria-label="Set duplizieren"
+                          style={{
+                            minWidth: "2rem",
+                            minHeight: "2rem",
+                            padding: "0.2rem 0.45rem",
+                            lineHeight: 1,
+                          }}
+                        >
+                          ⧉
+                        </button>
+                      </form>
+                    ) : null}
+                    <span className="role-pill">
+                      {blockEntries.length} Uebungen
+                    </span>
+                  </div>
                 </div>
 
                 {blockEntries.length === 0 ? (

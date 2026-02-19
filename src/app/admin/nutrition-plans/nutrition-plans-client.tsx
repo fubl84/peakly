@@ -4,6 +4,7 @@ import {
   createNutritionPlan,
   createNutritionPlanMealEntry,
   createNutritionPlanMealEntryAlternative,
+  duplicateNutritionPlan,
   deleteNutritionPlan,
   deleteNutritionPlanMealEntry,
   deleteNutritionPlanMealEntryAlternative,
@@ -869,6 +870,12 @@ export function NutritionPlansClient({
                 >
                   Bearbeiten
                 </button>
+                <form action={duplicateNutritionPlan}>
+                  <input type="hidden" name="id" value={plan.id} />
+                  <button type="submit" className="admin-secondary-button">
+                    Duplizieren
+                  </button>
+                </form>
                 <form action={deleteNutritionPlan}>
                   <input type="hidden" name="id" value={plan.id} />
                   <button type="submit" className="admin-danger-button">

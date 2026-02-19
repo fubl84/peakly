@@ -123,25 +123,34 @@ async function assertNoOverlapConflict(args: {
   weekStart: number;
   weekEnd: number;
   variantOptionId: string | null;
+  contentRefId: string;
   ignoreId?: string;
 }) {
-  const conflicting = await prisma.pathAssignment.findFirst({
+  const duplicate = await prisma.pathAssignment.findFirst({
     where: {
       pathId: args.pathId,
       kind: args.kind,
-      weekStart: { lte: args.weekEnd },
-      weekEnd: { gte: args.weekStart },
+      weekStart: args.weekStart,
+      weekEnd: args.weekEnd,
+      contentRefId: args.contentRefId,
       variantOptionId: args.variantOptionId,
       ...(args.ignoreId ? { NOT: { id: args.ignoreId } } : {}),
     },
     select: { id: true },
   });
 
-  if (conflicting) {
-    throw new Error(
-      "Konflikt: Überlappender Wochenbereich für denselben Typ und dieselbe Variante.",
-    );
+  if (duplicate) {
+    throw new Error("Konflikt: Diese Content-Zuweisung existiert bereits.");
   }
+}
+
+async function getPathMaxWeekEnd(pathId: string) {
+  const maxWeek = await prisma.pathAssignment.aggregate({
+    where: { pathId },
+    _max: { weekEnd: true },
+  });
+
+  return maxWeek._max.weekEnd ?? 1;
 }
 
 export async function createPath(
@@ -232,6 +241,7 @@ export async function createPath(
         kind: assignment.kind,
         weekStart,
         weekEnd,
+        contentRefId: assignment.contentRefId,
         variantOptionId: assignment.variantOptionId,
       });
 
@@ -302,8 +312,9 @@ export async function createPathAssignment(formData: FormData) {
   }
 
   const defaults = await getAssignmentDefaults(kind, contentRefId);
-  const weekStart = defaults.weekStart;
-  const weekEnd = defaults.weekEnd;
+  const pathMaxWeekEnd = await getPathMaxWeekEnd(pathId);
+  const weekStart = defaults.isFullPath ? 1 : defaults.weekStart;
+  const weekEnd = defaults.isFullPath ? pathMaxWeekEnd : defaults.weekEnd;
   const variantOptionId = defaults.variantOptionId;
 
   assertWeekRange(weekStart, weekEnd);
@@ -313,6 +324,7 @@ export async function createPathAssignment(formData: FormData) {
     kind,
     weekStart,
     weekEnd,
+    contentRefId,
     variantOptionId,
   });
 
